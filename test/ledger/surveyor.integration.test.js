@@ -20,6 +20,8 @@ import {
   ok
 } from '../utils'
 
+test.after(cleanDbs)
+
 const runtime = new Runtime({
   postgres: {
     url: process.env.BAT_POSTGRES_URL

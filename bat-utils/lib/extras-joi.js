@@ -107,7 +107,6 @@ module.exports = Joi.extend({
 
       validate (params, value, state, options) {
         const props = batPublisher.getPublisherProps(value)
-
         if ((!props) || (!props.publisherType)) return this.createError('string.badFormat', { v: value }, state, options)
 
         return value

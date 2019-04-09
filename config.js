@@ -92,7 +92,6 @@ const uphold = () => {
   }
 }
 
-
 const service = services[process.env.SERVICE]
 if (!service) {
   throw new Error('invalid process.env.SERVICE=' + process.env.SERVICE)

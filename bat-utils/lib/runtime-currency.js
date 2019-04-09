@@ -216,10 +216,20 @@ function Currency (config, runtime) {
   if (!conf.url) {
     throw new Error('currency ratios url is required')
   }
+
   context.config = Object.assign({
     updateTime: ms5min,
-    failureDebounceTime
+    failureDebounceTime,
+    BigNumber
   }, conf)
+
+  const { BigNumber: BigNum } = context.config
+  context.BigNumber = BigNum
+  BigNumber.config({
+    EXPONENTIAL_AT: 28,
+    DECIMAL_PLACES: 18
+  })
+
   context.runtime = runtime
   context.debug = debug
   context.cache = Currency.Cache()

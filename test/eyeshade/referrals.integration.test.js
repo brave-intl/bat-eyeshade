@@ -1,108 +1,132 @@
 'use strict'
 import { serial as test } from 'ava'
 import uuidV4 from 'uuid/v4'
+import _ from 'underscore'
 import {
-  cleanDbs,
-  cleanPgDb,
+  Runtime
+} from 'bat-utils'
+import {
+  ok,
+  status,
   eyeshadeAgent,
-  connectToDb,
-  braveYoutubePublisher
+  braveYoutubePublisher,
+  braveYoutubeOwner,
+  cleanDbs,
+  cleanPgDb
 } from '../utils'
 import {
-  timeout
-} from 'bat-utils/lib/extras-utils'
-import Postgres from 'bat-utils/lib/runtime-postgres'
+  removeReferral
+} from '../../eyeshade/lib/referrals'
 
-const postgres = new Postgres({ postgres: { url: process.env.BAT_POSTGRES_URL } })
+const runtime = new Runtime({
+  altcurrency: 'BAT',
+  referrals: {
+    amount: 5,
+    currency: 'USD'
+  },
+  postgres: {
+    url: process.env.BAT_POSTGRES_URL
+  },
+  currency: {
+    url: process.env.BAT_RATIOS_URL,
+    access_token: process.env.BAT_RATIOS_TOKEN
+  }
+})
+const {
+  BigNumber
+} = runtime.currency
 
-test.afterEach.always(async t => {
-  await cleanPgDb(postgres)()
-  await cleanDbs()
+test.afterEach.always(cleanDbs)
+test.afterEach.always(cleanPgDb(runtime.postgres))
+
+test('404s when transaction does not exist', async (t) => {
+  t.plan(0)
+
+  const id = uuidV4()
+
+  await eyeshadeAgent
+    .get(url(id))
+    .expect(status(404))
 })
 
-test('referrals are inserted into mongo then eventually postgres', async t => {
-  const eyeshadeMongo = await connectToDb('eyeshade')
-  const postgresClient = await postgres.connect()
+test('can add a referral', async (t) => {
+  t.plan(5)
+  const id = uuidV4().toLowerCase()
+  const uri = url(id)
+  const referrals = [{
+    ownerId: braveYoutubeOwner,
+    channelId: braveYoutubePublisher
+  }]
 
-  const txId = uuidV4().toLowerCase()
-  const referral = {
-    downloadId: uuidV4().toLowerCase(),
+  const {
+    body: inserted
+  } = await eyeshadeAgent
+    .put(uri)
+    .send(referrals)
+    .expect(ok)
+
+  const {
+    body
+  } = await eyeshadeAgent
+    .get(uri)
+    .expect(ok)
+
+  t.deepEqual(inserted, body)
+  const ratio = await runtime.currency.ratio('fiat/USD', 'alt/BAT')
+  const one = inserted[0]
+  const amount = new BigNumber(ratio).times(5)
+  t.true(amount.toString() > 0, 'probi are recorded')
+  t.is(inserted.length, 1, 'only one transaction inserted')
+  t.is(amount.round().toString(), new BigNumber(one.amount).round().toString(), '$5 in bat are transferred')
+  const subset = _.omit(one, ['amount'])
+  t.deepEqual(subset, {
     channelId: braveYoutubePublisher,
-    platform: 'ios',
-    finalized: new Date(),
-    ownerId: 'publishers#uuid:' + uuidV4().toLowerCase()
-  }
-  await eyeshadeAgent.put(`/v1/referrals/${txId}`).send([referral]).expect(200)
-
-  // ensure referral docs are created in mongo
-  const referralCollection = await eyeshadeMongo.collection('referrals')
-  const referralDocs = await referralCollection.find({downloadId: referral.downloadId}).toArray()
-  t.true(referralDocs.length === 1)
-
-  // ensure referral records are created in postgres
-  let rows
-  do { // wait until referral-report is processed and transactions are entered into postgres
-    await timeout(500).then(async () => {
-      rows = (await postgresClient.query(`select * from transactions where transaction_type = 'referral'`)).rows
-    })
-  } while (rows.length === 0)
-  t.true(rows.length === 1)
+    ownerId: braveYoutubeOwner,
+    transactionId: id
+  }, 'transaction is recorded')
+  await removeReferral(runtime, id)
 })
 
-test('duplicate referrals will not be inserted into mongo', async t => {
-  const eyeshadeMongo = await connectToDb('eyeshade')
-  const txId = uuidV4().toLowerCase()
-  const referral = {
-    downloadId: uuidV4().toLowerCase(),
-    channelId: braveYoutubePublisher,
-    platform: 'ios',
-    finalized: new Date(),
-    ownerId: 'publishers#uuid:' + uuidV4().toLowerCase()
-  }
-  await eyeshadeAgent.put(`/v1/referrals/${txId}`).send([referral]).expect(200)
+test('does not allow duplicate referrals when transactionId is same', async (t) => {
+  t.plan(0)
+  const id = uuidV4()
+  const uri = url(id)
+  const referrals = [{
+    ownerId: braveYoutubeOwner,
+    channelId: braveYoutubePublisher
+  }]
 
-  // ensure referral docs are created in mongo
-  const referralCollection = await eyeshadeMongo.collection('referrals')
-  let referralDocs = await referralCollection.find({downloadId: referral.downloadId}).toArray()
-  t.true(referralDocs.length === 1)
+  await eyeshadeAgent
+    .put(uri)
+    .send(referrals)
+    .expect(ok)
 
-  // post the same referral again and ensure no more were created
-  await eyeshadeAgent.put(`/v1/referrals/${txId}`).send([referral]).expect(200)
-  referralDocs = await referralCollection.find({downloadId: referral.downloadId}).toArray()
-  t.true(referralDocs.length === 1)
+  await eyeshadeAgent
+    .put(uri)
+    .send(referrals)
+    .expect(status(422))
 
-  // post the same referral again under different txId but same downloadId and ensure no more were created
-  const txId2 = uuidV4().toLowerCase()
-  await eyeshadeAgent.put(`/v1/referrals/${txId2}`).send([referral]).expect(200)
-  referralDocs = await referralCollection.find({downloadId: referral.downloadId}).toArray()
-
-  t.true(referralDocs.length === 1)
-  t.true(referralDocs[0].transactionId === txId)
+  await removeReferral(runtime, id)
 })
 
-test('if promo sends mix of duplicate and valid referrals with same tx id, only insert the valid referrals', async t => {
-  const eyeshadeMongo = await connectToDb('eyeshade')
-  const txId = uuidV4().toLowerCase()
-  const referral = {
-    downloadId: uuidV4().toLowerCase(),
+test('allows extra data', async (t) => {
+  t.plan(0)
+  const id = uuidV4()
+  const uri = url(id)
+  const referrals = [{
+    ownerId: braveYoutubeOwner,
     channelId: braveYoutubePublisher,
-    platform: 'ios',
-    finalized: new Date(),
-    ownerId: 'publishers#uuid:' + uuidV4().toLowerCase()
-  }
+    downloadId: uuidV4(),
+    platform: 'android',
+    finalized: (new Date()).toISOString()
+  }]
 
-  await eyeshadeAgent.put(`/v1/referrals/${txId}`).send([referral]).expect(200)
+  await eyeshadeAgent
+    .put(uri)
+    .send(referrals)
+    .expect(ok)
 
-  const referral2 = {
-    downloadId: uuidV4().toLowerCase(),
-    channelId: braveYoutubePublisher,
-    platform: 'ios',
-    finalized: new Date(),
-    ownerId: 'publishers#uuid:' + uuidV4().toLowerCase()
-  }
-
-  await eyeshadeAgent.put(`/v1/referrals/${txId}`).send([referral, referral2]).expect(200)
-  const referralCollection = await eyeshadeMongo.collection('referrals')
-  const referralDocs = await referralCollection.find({transactionId: txId}).toArray()
-  t.true(referralDocs.length === 2)
+  await removeReferral(runtime, id)
 })
+
+function url (id) { return `/v1/referrals/${id}` }

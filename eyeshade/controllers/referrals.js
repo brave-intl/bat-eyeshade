@@ -1,23 +1,38 @@
 const boom = require('boom')
-const bson = require('bson')
 const Joi = require('joi')
-const underscore = require('underscore')
 
 const utils = require('bat-utils')
 const braveHapi = utils.extras.hapi
 const braveJoi = utils.extras.joi
+const {
+  insertReferrals,
+  getByTransactionIds
+} = require('../lib/referrals')
 
 const v1 = {}
+let altcurrency = null
 
-const schema = Joi.array().min(1).items(Joi.object().keys({
-  ownerId: braveJoi.string().owner().required().description('the owner'),
-  channelId: braveJoi.string().publisher().required().description('the publisher identity'),
-  downloadId: Joi.string().guid().required().description('the download identity'),
-  platform: Joi.string().token().required().description('the download platform'),
-  finalized: Joi.date().iso().required().description('timestamp in ISO 8601 format').example('2018-03-22T23:26:01.234Z')
-}).unknown(true)).required().description('list of finalized referrals')
+const authorizationHeader = Joi.object({
+  authorization: Joi.string().required()
+}).unknown()
 
-let altcurrency
+const channelId = braveJoi.string().publisher().required().description('the publisher identity')
+const transactionId = Joi.string().guid().required().description('the transaction identity')
+const ownerId = braveJoi.string().owner().required().description('the owner')
+const amount = braveJoi.number().required().description('amount awarded for the referral')
+
+const joiPublisher = Joi.object().keys({
+  ownerId,
+  channelId
+}).unknown(true)
+const joiReferral = Joi.object().keys({
+  channelId,
+  ownerId,
+  amount,
+  transactionId
+})
+const joiPublishers = Joi.array().items(joiPublisher).required().description('list of requested referral creations')
+const joiReferrals = Joi.array().items(joiReferral).required().description('list of finalized referrals')
 
 /*
    GET /v1/referrals/{transactionID}
@@ -26,20 +41,17 @@ let altcurrency
 v1.findReferrals = {
   handler: (runtime) => {
     return async (request, reply) => {
-      const transactionId = request.params.transactionId
-      const debug = braveHapi.debug(module, request)
-      const transactions = runtime.database.get('referrals', debug)
-      let entries, results
+      const {
+        transactionId
+      } = request.params
 
-      entries = await transactions.find({ transactionId: transactionId })
-      if (entries.length === 0) return reply(boom.notFound('no such transaction-identifier: ' + transactionId))
+      const entries = await getByTransactionIds(runtime, [transactionId])
 
-      results = []
-      entries.forEach((entry) => {
-        results.push(underscore.extend({ channelId: entry.publisher },
-                                       underscore.pick(entry, [ 'downloadId', 'platform', 'finalized' ])))
-      })
-      reply(results)
+      if (entries.length === 0) {
+        return reply(boom.notFound('no such transaction-identifier: ' + transactionId))
+      }
+
+      reply(entries)
     }
   },
 
@@ -52,14 +64,15 @@ v1.findReferrals = {
   tags: [ 'api', 'referrals' ],
 
   validate: {
-    headers: Joi.object({ authorization: Joi.string().required() }).unknown(),
+    headers: authorizationHeader,
     params: {
-      transactionId: Joi.string().guid().required().description('the transaction identity')
+      transactionId: transactionId
     }
   },
 
-  response:
-    { schema: schema }
+  response: {
+    schema: joiReferrals
+  }
 }
 
 /*
@@ -70,56 +83,33 @@ v1.findReferrals = {
 v1.createReferrals = {
   handler: (runtime) => {
     return async (request, reply) => {
-      const transactionId = request.params.transactionId
-      const payload = request.payload
-      const debug = braveHapi.debug(module, request)
-      const referrals = runtime.database.get('referrals', debug)
-      const downloadIdsToBeConfirmed = []
-      let entries, existingDownloadIds, probi
+      const { transactionId } = request.params
+      const referrals = request.payload
 
-      probi = await runtime.currency.fiat2alt(runtime.config.referrals.currency, runtime.config.referrals.amount, altcurrency)
-      probi = bson.Decimal128.fromString(probi.toString())
+      const byTxId = await getByTransactionIds(runtime, [transactionId])
 
-      // Get all download ids promo wants to finalize
-      for (let referral of payload) {
-        underscore.extend(referral, { altcurrency: altcurrency, probi: probi })
-        downloadIdsToBeConfirmed.push(referral.downloadId)
+      if (byTxId.length > 0) {
+        const message = 'existing transaction-identifier: ' + transactionId
+        return reply(boom.badData(message))
       }
 
-      // Check if any already are confirmed
-      entries = await referrals.find({'downloadId': {$in: downloadIdsToBeConfirmed}})
+      const {
+        amount,
+        currency
+      } = runtime.config.referrals
 
-      // Find which downloadIds are already accounted for
-      existingDownloadIds = []
-      if (entries.length > 0) {
-        entries.forEach((referral) => { existingDownloadIds.push(referral.downloadId) })
+      const probi = await runtime.currency.fiat2alt(currency, amount, altcurrency)
+      const probiString = probi.toString()
+
+      const options = {
+        probi: probiString,
+        altcurrency,
+        transactionId
       }
+      await insertReferrals(runtime, options, referrals)
+      const created = await getByTransactionIds(runtime, [transactionId])
 
-      for (let referral of payload) {
-        let state
-
-        // Don't insert referrals already accounted for
-        if (existingDownloadIds.includes(referral.downloadId)) {
-          continue
-        }
-
-        underscore.extend(referral, { altcurrency: altcurrency, probi: probi })
-        state = {
-          $currentDate: { timestamp: { $type: 'timestamp' } },
-          $set: underscore.extend({
-            finalized: new Date(referral.finalized),
-            owner: referral.ownerId,
-            publisher: referral.channelId,
-            transactionId: transactionId,
-            exclude: false
-          }, underscore.pick(referral, [ 'platform', 'altcurrency', 'probi' ]))
-        }
-        await referrals.update({ downloadId: referral.downloadId }, state, { upsert: true })
-      }
-
-      await runtime.queue.send(debug, 'referral-report', { transactionId, shouldUpdateBalances: true })
-
-      reply({})
+      reply(created)
     }
   },
 
@@ -132,15 +122,16 @@ v1.createReferrals = {
   tags: [ 'api', 'referrals' ],
 
   validate: {
-    headers: Joi.object({ authorization: Joi.string().required() }).unknown(),
+    headers: authorizationHeader,
+    payload: joiPublishers,
     params: {
-      transactionId: Joi.string().guid().required().description('the transaction identity')
-    },
-    payload: schema
+      transactionId: transactionId
+    }
   },
 
-  response:
-    { schema: Joi.object().length(0) }
+  response: {
+    schema: joiReferrals
+  }
 }
 
 module.exports.routes = [
@@ -150,37 +141,4 @@ module.exports.routes = [
 
 module.exports.initialize = async (debug, runtime) => {
   altcurrency = runtime.config.altcurrency || 'BAT'
-
-  await runtime.database.checkIndices(debug, [
-    {
-      category: runtime.database.get('referrals', debug),
-      name: 'referrals',
-      property: 'downloadId',
-      empty: {
-        downloadId: '',
-
-        transactionId: '',
-        publisher: '',
-        owner: '',
-        platform: '',
-        finalized: bson.Timestamp.ZERO,
-
-        altcurrency: '',
-        probi: bson.Decimal128.POSITIVE_ZERO,
-
-     // added by administrator
-        exclude: false,
-        hash: '',
-
-        timestamp: bson.Timestamp.ZERO
-      },
-      unique: [ { downloadId: 1 } ],
-      others: [ { transactionId: 1 }, { publisher: 1 }, { owner: 1 }, { finalized: 1 },
-                { altcurrency: 1 }, { probi: 1 }, { exclude: 1 }, { hash: 1 }, { timestamp: 1 },
-                { altcurrency: 1, probi: 1 },
-                { altcurrency: 1, exclude: 1, probi: 1 },
-                { owner: 1, altcurrency: 1, exclude: 1, probi: 1 },
-                { publisher: 1, altcurrency: 1, exclude: 1, probi: 1 } ]
-    }
-  ])
 }

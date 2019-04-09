@@ -255,10 +255,7 @@ WHERE
   const referralURL = '/v1/referrals/' + referralKey
   const referral = {
     ownerId: braveYoutubeOwner,
-    channelId: braveYoutubePublisher,
-    downloadId: uuidV4(),
-    platform: 'android',
-    finalized: (new Date()).toISOString()
+    channelId: braveYoutubePublisher
   }
   const referrals = [referral]
 

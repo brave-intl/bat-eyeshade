@@ -3,7 +3,6 @@ import {
 } from 'ava'
 import Postgres from 'bat-utils/lib/runtime-postgres'
 import Queue from 'bat-utils/lib/runtime-queue'
-import SDebug from 'sdebug'
 import {
   workers
 } from '../../eyeshade/workers/wallet'
@@ -13,23 +12,19 @@ import {
 import {
   createSurveyor,
   getSurveyor,
+  debug,
   cleanPgDb
 } from '../utils'
 import {
   timeout
 } from 'bat-utils/lib/extras-utils'
 
-process.env.SERVICE = 'ledger'
-const config = require('../../config')
-
 const votingReportWorker = workers['voting-report']
 
-const debug = new SDebug('surveyor-test')
-
 const postgres = new Postgres({ postgres: { url: process.env.BAT_POSTGRES_URL } })
-
+const testingCohorts = process.env.TESTING_COHORTS.split(',')
 const runtime = {
-  config,
+  config: { testingCohorts },
   postgres,
   queue: new Queue({ queue: process.env.BAT_REDIS_URL })
 }

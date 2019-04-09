@@ -4,7 +4,6 @@ const utils = require('bat-utils')
 const config = require('../config.js')
 
 const publishersWorker = require('./workers/publishers')
-const referralsWorker = require('./workers/referrals')
 const reportsWorker = require('./workers/reports')
 const surveyorsWorker = require('./workers/surveyors')
 const walletWorker = require('./workers/wallet')
@@ -24,7 +23,6 @@ Runtime.newrelic.setupNewrelic(config, __filename)
 
 const parentModules = [
   publishersWorker,
-  referralsWorker,
   reportsWorker,
   surveyorsWorker,
   walletWorker

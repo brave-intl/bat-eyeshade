@@ -284,19 +284,19 @@ async function insertFromVoting (runtime, client, voteDoc, surveyorCreatedAt) {
   }
 }
 
-async function insertFromReferrals (runtime, client, referrals) {
-  if (referrals._id.altcurrency !== 'BAT') {
+async function insertFromReferrals (runtime, client, referral) {
+  if (referral._id.altcurrency !== 'BAT') {
     throw new Error('Only altcurrency === BAT transactions are supported')
   }
-  const BATtoProbi = runtime.currency.alt2scale(referrals._id.altcurrency)
+  const BATtoProbi = runtime.currency.alt2scale(referral._id.altcurrency)
 
-  if (referrals.probi) {
-    const probi = new BigNumber(referrals.probi.toString())
-    const created = createdTimestamp(referrals.firstId)
+  if (referral.probi) {
+    const probi = new BigNumber(referral.probi.toString())
+    const created = createdTimestamp(referral.firstId)
     const month = new Date(created).toDateString().split(' ')[1]
 
     if (probi.greaterThan(new BigNumber(0))) {
-      const normalizedChannel = normalizeChannel(referrals._id.publisher)
+      const normalizedChannel = normalizeChannel(referral._id.publisher)
       const props = getPublisherProps(normalizedChannel)
       if (props.providerName && props.providerName === 'youtube' && props.providerSuffix === 'user') {
         throw new Error('Unexpected provider suffix: youtube#user')
@@ -308,14 +308,14 @@ async function insertFromReferrals (runtime, client, referrals) {
       `
       await client.query(query, [
         // transactionId and channel pair should be unique
-        uuidv5(referrals.transactionId + normalizedChannel, '3d3e7966-87c3-44ed-84c3-252458f99536'),
+        uuidv5(referral.transactionId + normalizedChannel, '3d3e7966-87c3-44ed-84c3-252458f99536'),
         created / 1000,
         `referrals through ${month}`,
         'referral',
-        referrals.transactionId,
-        runtime.config.wallet.settlementAddress[referrals._id.altcurrency],
+        referral.transactionId,
+        runtime.config.wallet.settlementAddress[referral._id.altcurrency],
         'uphold',
-        referrals._id.owner,
+        referral._id.owner,
         'owner',
         probi.dividedBy(BATtoProbi).toString(),
         normalizedChannel
