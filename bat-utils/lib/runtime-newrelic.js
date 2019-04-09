@@ -3,6 +3,12 @@ const tldjs = require('tldjs')
 const os = require('os')
 const path = require('path')
 
+const {
+  NODE_ENV,
+  HOST,
+  SERVICE
+} = require('../../env')
+
 module.exports = createNewrelic
 
 createNewrelic.setupNewrelic = setup
@@ -18,7 +24,7 @@ function Newrelic (config, runtime) {
   if ((!config.newrelic) || (!config.newrelic.key)) return newrelic
 
   if (!config.newrelic.appname) {
-    if (process.env.NODE_ENV === 'production') throw new Error('config.newrelic.appname undefined')
+    if (NODE_ENV === 'production') throw new Error('config.newrelic.appname undefined')
     return newrelic
   }
 
@@ -41,10 +47,10 @@ function setup (config, fName) {
     if (!config.newrelic.appname) {
       const appname = path.parse(fName).name
 
-      if (process.env.NODE_ENV === 'production') {
-        config.newrelic.appname = appname + '.' + tldjs.getSubdomain(process.env.HOST)
+      if (NODE_ENV === 'production') {
+        config.newrelic.appname = appname + '.' + tldjs.getSubdomain(HOST)
       } else {
-        config.newrelic.appname = 'bat-' + process.env.SERVICE + '-' + appname + '@' + os.hostname()
+        config.newrelic.appname = 'bat-' + SERVICE + '-' + appname + '@' + os.hostname()
       }
     }
     process.env.NEW_RELIC_APP_NAME = config.newrelic.appname

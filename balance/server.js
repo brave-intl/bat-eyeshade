@@ -1,4 +1,3 @@
-const dotenv = require('dotenv')
 const config = require('../config.js')
 const utils = require('../bat-utils')
 
@@ -8,8 +7,6 @@ const {
   hapi,
   Runtime
 } = utils
-
-dotenv.config()
 
 Runtime.newrelic.setupNewrelic(config, __filename)
 

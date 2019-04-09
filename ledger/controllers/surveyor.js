@@ -10,6 +10,11 @@ const braveHapi = utils.extras.hapi
 const braveJoi = utils.extras.joi
 const { surveyorChoices } = utils.extras.utils
 
+const {
+  SURVEYORS,
+  DYNO
+} = require('../../env')
+
 const v1 = {}
 const v2 = {}
 
@@ -693,7 +698,7 @@ module.exports.routes = [
 ]
 
 module.exports.initialize = async (debug, runtime) => {
-  const configurations = process.env.SURVEYORS || 'contribution,voting'
+  const configurations = SURVEYORS || 'contribution,voting'
   const surveyors = runtime.database.get('surveyors', debug)
   let entry, i, service, services, surveyor, surveyorType
 
@@ -732,7 +737,7 @@ module.exports.initialize = async (debug, runtime) => {
       surveyor.payload = entry.payload
 
       if ((surveyorType === 'contribution') ||
-            ((typeof process.env.DYNO !== 'undefined') && (process.env.DYNO !== 'web.1'))) continue
+            ((typeof DYNO !== 'undefined') && (DYNO !== 'web.1'))) continue
 
       setTimeout(() => { provision(debug, runtime, surveyor.surveyorId) }, 5 * 1000)
     }

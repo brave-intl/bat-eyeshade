@@ -1,7 +1,3 @@
-require('dotenv').config()
-if (!process.env.BATUTIL_SPACES) {
-  process.env.BATUTIL_SPACES = '*,-extras.worker'
-}
 const { Runtime, hapi } = require('bat-utils')
 const { controllers, server } = hapi
 

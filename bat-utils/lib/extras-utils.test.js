@@ -12,9 +12,6 @@ import {
   normalizeChannel
 } from './extras-utils'
 
-import dotenv from 'dotenv'
-dotenv.config()
-
 const objectId = ObjectID('5b11685dd28b11258d50c1f4')
 const objectDate = (new Date('2018-06-01T15:38:05.000Z')).getTime()
 test('createdTimestamp', (t) => {

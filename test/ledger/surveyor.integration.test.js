@@ -20,13 +20,20 @@ import {
   ok
 } from '../utils'
 
+const {
+  VOTING_COHORTS,
+  BAT_POSTGRES_URL,
+  BAT_RATIOS_URL,
+  BAT_RATIOS_TOKEN
+} = require('../../env')
+
 const runtime = new Runtime({
   postgres: {
-    url: process.env.BAT_POSTGRES_URL
+    url: BAT_POSTGRES_URL
   },
   currency: {
-    url: process.env.BAT_RATIOS_URL,
-    access_token: process.env.BAT_RATIOS_TOKEN
+    url: BAT_RATIOS_URL,
+    access_token: BAT_RATIOS_TOKEN
   }
 })
 
@@ -109,7 +116,6 @@ test('check votes ratio', async (t) => {
 })
 
 test('required cohorts are added to surveyors', async (t) => {
-  const { VOTING_COHORTS } = process.env
   const cohorts = VOTING_COHORTS ? VOTING_COHORTS.split(',') : []
   console.log('testing cohorts', cohorts)
   t.plan((cohorts.length * 2) + 1)

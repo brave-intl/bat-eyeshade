@@ -1,5 +1,4 @@
 import crypto from 'crypto'
-import dotenv from 'dotenv'
 import tweetnacl from 'tweetnacl'
 import test from 'ava'
 import uuidV4 from 'uuid/v4'
@@ -7,8 +6,6 @@ import { sign } from 'http-request-signature'
 
 import Wallet from './runtime-wallet'
 import utils from './extras-utils'
-
-dotenv.config()
 
 test('validateTxSignature: works', async t => {
   t.plan(10)

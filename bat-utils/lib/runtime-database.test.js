@@ -2,8 +2,6 @@
 
 import database from './runtime-database.js'
 import test from 'ava'
-import dotenv from 'dotenv'
-dotenv.config()
 
 test('database.form', async t => {
   const db = database.prototype

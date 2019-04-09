@@ -11,6 +11,10 @@ const utils = require('bat-utils')
 const braveHapi = utils.extras.hapi
 const braveJoi = utils.extras.joi
 
+const {
+  REGISTRARS
+} = require('../../env')
+
 const v1 = {}
 const v2 = {}
 
@@ -363,7 +367,7 @@ module.exports.routes = [
 ]
 
 module.exports.initialize = async (debug, runtime) => {
-  const configurations = process.env.REGISTRARS || 'persona:1,viewing:2'
+  const configurations = REGISTRARS || 'persona:1,viewing:2'
   const registrars = runtime.database.get('registrars', debug)
   let entry, i, payload, registrar, registrarId, registrarType, service, services, state
 

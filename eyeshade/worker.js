@@ -1,4 +1,3 @@
-const dotenv = require('dotenv')
 const utils = require('bat-utils')
 
 const config = require('../config.js')
@@ -13,12 +12,6 @@ const {
   Runtime,
   extras
 } = utils
-
-dotenv.config()
-
-if (!process.env.BATUTIL_SPACES) {
-  process.env.BATUTIL_SPACES = '*,-hapi'
-}
 
 Runtime.newrelic.setupNewrelic(config, __filename)
 

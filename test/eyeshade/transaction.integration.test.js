@@ -20,7 +20,12 @@ import {
   cleanPgDb
 } from '../utils'
 
-const postgres = new Postgres({ postgres: { url: process.env.BAT_POSTGRES_URL } })
+const {
+  BAT_RATIOS_URL,
+  BAT_RATIOS_TOKEN,
+  BAT_POSTGRES_URL
+} = require('../../env')
+const postgres = new Postgres({ postgres: { url: BAT_POSTGRES_URL } })
 
 const runtime = {
   config: {
@@ -32,8 +37,8 @@ const runtime = {
   },
   currency: new Currency({
     currency: {
-      url: process.env.BAT_RATIOS_URL,
-      access_token: process.env.BAT_RATIOS_TOKEN
+      url: BAT_RATIOS_URL,
+      access_token: BAT_RATIOS_TOKEN
     }
   }),
   postgres

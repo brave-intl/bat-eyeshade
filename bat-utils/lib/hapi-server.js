@@ -21,7 +21,15 @@ const braveHapi = require('./extras-hapi')
 const whitelist = require('./hapi-auth-whitelist')
 
 const npminfo = require('../npminfo')
-
+const env = require('../../env')
+const {
+  ACME_CHALLENGE,
+  DYNO,
+  IP_GRAYLIST,
+  NODE_ENV,
+  PORT,
+  TOKEN_LIST
+} = env
 const pushScopedTokens = pushTokens({
   // env var       // scope key
   ALLOWED_ADS_TOKENS: 'ads',
@@ -33,7 +41,7 @@ function pushTokens (map) {
   return (token, memo = []) => {
     return keys.reduce((memo, key) => {
       const value = map[key]
-      const envTokens = process.env[key]
+      const envTokens = env[key]
       const TOKENS = envTokens ? envTokens.split(',') : []
       const has = braveHapi.isSimpleTokenValid(TOKENS, token)
       return memo.concat(has ? [value] : [])
@@ -44,10 +52,10 @@ function pushTokens (map) {
 const Server = async (options, runtime) => {
   const debug = new SDebug('web')
 
-  const graylist = { addresses: process.env.IP_GRAYLIST && process.env.IP_GRAYLIST.split(',') }
+  const graylist = { addresses: IP_GRAYLIST && IP_GRAYLIST.split(',') }
   const server = new hapi.Server()
 
-  server.connection({ port: process.env.PORT })
+  server.connection({ port: PORT })
 
   if (!runtime) {
     runtime = options
@@ -58,7 +66,7 @@ const Server = async (options, runtime) => {
 
   debug.initialize({ web: { id: options.id } })
 
-  if (process.env.NODE_ENV !== 'production') {
+  if (NODE_ENV !== 'production') {
     process.on('warning', (warning) => {
       if (warning.name === 'DeprecationWarning') return
 
@@ -128,7 +136,7 @@ const Server = async (options, runtime) => {
               } else {
                 token = request.query.access_token
               }
-              tokenlist = process.env.TOKEN_LIST ? process.env.TOKEN_LIST.split(',') : []
+              tokenlist = TOKEN_LIST ? TOKEN_LIST.split(',') : []
               limit = (typeof token === 'string' && braveHapi.isSimpleTokenValid(tokenlist, token)) ? 60000 : 3000
             }
 
@@ -283,7 +291,7 @@ const Server = async (options, runtime) => {
       const error = response
 
       runtime.captureException(error, { req: request })
-      if (process.env.NODE_ENV === 'development') {
+      if (NODE_ENV === 'development') {
         error.output.payload.message = error.message
         if (error.body) {
           error.output.payload.body = error.body
@@ -372,11 +380,11 @@ const Server = async (options, runtime) => {
   server.route({ method: 'GET', path: '/favicon.ico', handler: { file: './documentation/favicon.ico' } })
   server.route({ method: 'GET', path: '/favicon.png', handler: { file: './documentation/favicon.png' } })
   server.route({ method: 'GET', path: '/robots.txt', handler: { file: './documentation/robots.txt' } })
-  if (process.env.ACME_CHALLENGE) {
+  if (ACME_CHALLENGE) {
     server.route({
       method: 'GET',
-      path: '/.well-known/acme-challenge/' + process.env.ACME_CHALLENGE.split('.')[0],
-      handler: (request, reply) => { reply(process.env.ACME_CHALLENGE) }
+      path: '/.well-known/acme-challenge/' + ACME_CHALLENGE.split('.')[0],
+      handler: (request, reply) => { reply(ACME_CHALLENGE) }
     })
   }
   // automated fishing expeditions shouldn't result in devops alerts...
@@ -398,12 +406,12 @@ const Server = async (options, runtime) => {
           { server: runtime.config.server.href, version: server.version, resolvers: resolvers },
           server.info,
           {
-            env: underscore.pick(process.env, [ 'DEBUG', 'DYNO', 'NEW_RELIC_APP_NAME', 'NODE_ENV', 'BATUTIL_SPACES' ]),
+            env: underscore.pick(env, [ 'DEBUG', 'DYNO', 'NEW_RELIC_APP_NAME', 'NODE_ENV', 'BATUTIL_SPACES' ]),
             options: underscore.pick(options, [ 'headersP', 'remoteP' ])
           }))
       runtime.notify(debug, {
         text: os.hostname() + ' ' + npminfo.name + '@' + npminfo.version + ' started ' +
-          (process.env.DYNO || 'web') + '/' + options.id
+          (DYNO || 'web') + '/' + options.id
       })
 
       resolve('started')

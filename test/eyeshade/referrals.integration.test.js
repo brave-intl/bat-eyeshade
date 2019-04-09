@@ -13,7 +13,10 @@ import {
 } from 'bat-utils/lib/extras-utils'
 import Postgres from 'bat-utils/lib/runtime-postgres'
 
-const postgres = new Postgres({ postgres: { url: process.env.BAT_POSTGRES_URL } })
+const {
+  BAT_POSTGRES_URL
+} = require('../../env')
+const postgres = new Postgres({ postgres: { url: BAT_POSTGRES_URL } })
 
 test.afterEach.always(async t => {
   await cleanPgDb(postgres)()

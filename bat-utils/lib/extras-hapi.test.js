@@ -2,8 +2,6 @@
 
 import braveHapi from './extras-hapi.js'
 import test from 'ava'
-import dotenv from 'dotenv'
-dotenv.config()
 
 test('isSimpleTokenValid', async t => {
   t.false(braveHapi.isSimpleTokenValid([], ''))

@@ -8,7 +8,7 @@ const {
 } = require('underscore')
 const {
   SERVICE
-} = process.env
+} = require('../env')
 const cwd = process.cwd()
 const parent = join(cwd, '..')
 const parentSplit = parent.split(sep)

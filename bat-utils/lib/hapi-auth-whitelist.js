@@ -3,8 +3,11 @@ const path = require('path')
 const boom = require('boom')
 const Netmask = require('netmask').Netmask
 const underscore = require('underscore')
+const {
+  IP_WHITELIST
+} = require('../../env')
 
-const whitelist = process.env.IP_WHITELIST && process.env.IP_WHITELIST.split(',')
+const whitelist = IP_WHITELIST && IP_WHITELIST.split(',')
 
 let authorizedAddrs = whitelist && [ '127.0.0.1' ]
 let authorizedBlocks = whitelist && []

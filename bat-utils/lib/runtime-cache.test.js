@@ -1,16 +1,16 @@
 'use strict'
 
 import { serial as test } from 'ava'
-import dotenv from 'dotenv'
 import Cache from './runtime-cache'
 import uuidV4 from 'uuid/v4'
-
-dotenv.config()
+import {
+  BAT_REDIS_URL
+} from '../../env'
 
 const cache = new Cache({
   cache: {
     redis: {
-      url: process.env.BAT_REDIS_URL
+      url: BAT_REDIS_URL
     }
   }
 })

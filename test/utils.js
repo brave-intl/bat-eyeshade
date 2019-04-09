@@ -1,5 +1,3 @@
-const dotenv = require('dotenv')
-dotenv.config()
 const agent = require('supertest').agent
 const mongodb = require('mongodb')
 const stringify = require('querystring').stringify
@@ -39,8 +37,16 @@ const ledgerCollections = [
   'publishersX',
   'restricted'
 ]
+const {
+  TOKEN_LIST,
+  BAT_EYESHADE_SERVER,
+  BAT_LEDGER_SERVER,
+  BAT_BALANCE_SERVER,
+  BAT_MONGODB_URI,
+  BAT_GRANT_REDIS_URL
+} = require('../env')
 
-const tkn = process.env.TOKEN_LIST.split(',')[0]
+const tkn = TOKEN_LIST.split(',')[0]
 const token = `Bearer ${tkn}`
 
 const createFormURL = (params) => (pathname, p) => `${pathname}?${stringify(_.extend({}, params, p || {}))}`
@@ -55,9 +61,9 @@ const formURL = createFormURL({
 })
 
 const AUTH_KEY = 'Authorization'
-const eyeshadeAgent = agent(process.env.BAT_EYESHADE_SERVER).set(AUTH_KEY, token)
-const ledgerAgent = agent(process.env.BAT_LEDGER_SERVER).set(AUTH_KEY, token)
-const balanceAgent = agent(process.env.BAT_BALANCE_SERVER).set(AUTH_KEY, token)
+const eyeshadeAgent = agent(BAT_EYESHADE_SERVER).set(AUTH_KEY, token)
+const ledgerAgent = agent(BAT_LEDGER_SERVER).set(AUTH_KEY, token)
+const balanceAgent = agent(BAT_BALANCE_SERVER).set(AUTH_KEY, token)
 
 const status = (expectation) => (res) => {
   if (!res) {
@@ -125,7 +131,7 @@ const assertWithinBounds = (t, v1, v2, tol, msg) => {
     t.true((v2 - v1) <= tol, msg)
   }
 }
-const dbUri = (db) => `${process.env.BAT_MONGODB_URI}/${db}`
+const dbUri = (db) => `${BAT_MONGODB_URI}/${db}`
 const connectToDb = async (key) => mongodb.MongoClient.connect(dbUri(key))
 
 const cleanDb = async (key, collections) => {
@@ -141,7 +147,7 @@ const cleanEyeshadeDb = async (collections) => {
 }
 
 const cleanRedisDb = async () => {
-  const url = process.env.BAT_GRANT_REDIS_URL
+  const url = BAT_GRANT_REDIS_URL
   const client = redis.createClient(url)
   await new Promise((resolve, reject) => {
     client.on('ready', () => {

@@ -11,8 +11,9 @@ import {
   ok
 } from '../utils'
 
-import dotenv from 'dotenv'
-dotenv.config()
+const {
+  UPHOLD_ACCESS_TOKEN
+} = require('../../env')
 
 const collections = ['owners', 'publishers', 'tokens']
 
@@ -41,7 +42,7 @@ test('eyeshade PUT /v1/owners/{owner}/wallet with uphold parameters', async t =>
   const dataOwnerWalletParams = {
     provider: 'uphold',
     parameters: {
-      access_token: process.env.UPHOLD_ACCESS_TOKEN,
+      access_token: UPHOLD_ACCESS_TOKEN,
       scope: SCOPE
     }
   }
@@ -87,7 +88,7 @@ test('eyeshade: create brave youtube channel and owner, verify with uphold, add 
 
   const walletUrl = `/v1/owners/${encodedOwner}/wallet`
   const parameters = {
-    access_token: process.env.UPHOLD_ACCESS_TOKEN,
+    access_token: UPHOLD_ACCESS_TOKEN,
     show_verification_status: false,
     defaultCurrency: 'DASH'
   }

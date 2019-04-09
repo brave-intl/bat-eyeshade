@@ -9,7 +9,6 @@ import tweetnacl from 'tweetnacl'
 import uuidV4 from 'uuid/v4'
 import { sign } from 'http-request-signature'
 import _ from 'underscore'
-import dotenv from 'dotenv'
 import {
   timeout,
   uint8tohex,
@@ -35,23 +34,28 @@ import {
   freezeOldSurveyors
 } from '../eyeshade/workers/reports'
 
-dotenv.config()
-
-const postgres = new Postgres({ postgres: { url: process.env.BAT_POSTGRES_URL } })
-const queue = new Queue({ queue: { rsmq: process.env.BAT_REDIS_URL } })
+const {
+  BAT_POSTGRES_URL,
+  BAT_REDIS_URL,
+  UPHOLD_ENVIRONMENT,
+  UPHOLD_ACCESS_TOKEN,
+  UPHOLD_DONOR_CARD_ID
+} = require('../env')
+const postgres = new Postgres({ postgres: { url: BAT_POSTGRES_URL } })
+const queue = new Queue({ queue: { rsmq: BAT_REDIS_URL } })
 const runtime = { postgres, queue }
 
 const upholdBaseUrls = {
   'prod': 'https://api.uphold.com',
   'sandbox': 'https://api-sandbox.uphold.com'
 }
-const environment = process.env.UPHOLD_ENVIRONMENT || 'sandbox'
+const environment = UPHOLD_ENVIRONMENT || 'sandbox'
 const uphold = new UpholdSDK({ // eslint-disable-line new-cap
   baseUrl: upholdBaseUrls[environment],
   clientId: 'none',
   clientSecret: 'none'
 })
-const donorCardId = process.env.UPHOLD_DONOR_CARD_ID
+const donorCardId = UPHOLD_DONOR_CARD_ID
 
 const statsURL = statsUrl()
 const balanceURL = '/v1/accounts/balances'
@@ -588,7 +592,7 @@ async function fundUserWallet (t, personaCredential, paymentId, userCardId) {
   }])
 
   // have to do some hacky shit to use a personal access token
-  uphold.storage.setItem('uphold.access_token', process.env.UPHOLD_ACCESS_TOKEN)
+  uphold.storage.setItem('uphold.access_token', UPHOLD_ACCESS_TOKEN)
 
   await uphold.createCardTransaction(donorCardId,
     {'amount': desiredTxAmt, 'currency': 'BAT', 'destination': userCardId},

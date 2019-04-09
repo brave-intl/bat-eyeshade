@@ -4,6 +4,11 @@ const underscore = require('underscore')
 
 const utilities = require('../controllers/surveyor.js')
 
+const {
+  DYNO,
+  SURVEYOR_CRON_SCHEDULE
+} = require('../../env')
+
 let interval
 
 const daily = async (debug, runtime) => {
@@ -48,7 +53,7 @@ exports.name = 'surveyor'
 exports.initialize = async (debug, runtime) => {
   let next, schedule
 
-  if ((typeof process.env.DYNO !== 'undefined') && (process.env.DYNO !== 'worker.1')) return
+  if ((typeof DYNO !== 'undefined') && (DYNO !== 'worker.1')) return
 
   await require('../controllers/registrar.js').initialize(debug, runtime)
   await utilities.initialize(debug, runtime)
@@ -67,7 +72,7 @@ exports.initialize = async (debug, runtime) => {
 
  */
 
-  schedule = process.env.SURVEYOR_CRON_SCHEDULE || '0 0 0 * * 0,3,5'
+  schedule = SURVEYOR_CRON_SCHEDULE || '0 0 0 * * 0,3,5'
 
   interval = cron.parseExpression(schedule, {})
   next = interval.next().getTime()

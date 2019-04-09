@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "balance-server": "NODE_PATH=dist node --optimize_for_size --max_old_space_size=460 --gc_interval=100 dist/balance/server.js",
-    "build": "npm run build-utils && npm run build-ledger && npm run build-eyeshade && npm run build-balance && cp config.js dist/config.js",
+    "build": "npm run build-utils && npm run build-ledger && npm run build-eyeshade && npm run build-balance && cp config.js dist/config.js && cp env.js dist/env.js",
     "build-balance": "babel balance --ignore **/*.test.js -d dist/balance",
     "build-eyeshade": "babel eyeshade --ignore **/*.test.js -d dist/eyeshade && cp -R eyeshade/migrations/* dist/eyeshade/migrations/",
     "build-ledger": "babel ledger --ignore **/*.test.js -d dist/ledger",

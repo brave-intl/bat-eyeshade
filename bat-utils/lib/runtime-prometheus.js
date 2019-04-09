@@ -6,6 +6,9 @@ const debug = new SDebug('prometheus')
 const exposition = require('exposition')
 const redis = require('redis')
 const underscore = require('underscore')
+const {
+  SERVICE
+} = require('../../env')
 
 const Prometheus = function (config, runtime) {
   if (!(this instanceof Prometheus)) return new Prometheus(config, runtime)
@@ -179,7 +182,7 @@ Prometheus.prototype.maintenance = function () {
     if (!self.publisher) return
   }
 
-  self.publisher.publish('prometheus:' + process.env.SERVICE, JSON.stringify({
+  self.publisher.publish('prometheus:' + SERVICE, JSON.stringify({
     label: self.label,
     msgno: self.msgno++,
     updates: updates
@@ -202,7 +205,7 @@ Prometheus.prototype.maintenance = function () {
     if (packet.label === self.label) return
 
     if (packet.msgno === 0) {
-      self.publisher.publish('prometheus:' + process.env.SERVICE, JSON.stringify({
+      self.publisher.publish('prometheus:' + SERVICE, JSON.stringify({
         label: self.label,
         msgno: self.msgno++,
         updates: underscore.values(self.global || {})
@@ -212,7 +215,7 @@ Prometheus.prototype.maintenance = function () {
     merge(packet.updates)
   })
 
-  self.subscriber.subscribe('prometheus:' + process.env.SERVICE)
+  self.subscriber.subscribe('prometheus:' + SERVICE)
 }
 
 Prometheus.prototype.setCounter = async function (name, help, value) {

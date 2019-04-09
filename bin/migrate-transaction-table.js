@@ -5,9 +5,14 @@ const Queue = require('bat-utils/lib/runtime-queue')
 const SDebug = require('sdebug')
 const debug = new SDebug('migrate-transaction-table')
 
+const {
+  MONGODB_URI,
+  REDIS_URL
+} = require('../env')
+
 async function main () {
-  const database = new Database({ database: process.env.MONGODB_URI })
-  const queue = new Queue({ queue: process.env.REDIS_URL })
+  const database = new Database({ database: MONGODB_URI })
+  const queue = new Queue({ queue: REDIS_URL })
 
   // settlements
 

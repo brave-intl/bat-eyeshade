@@ -19,19 +19,23 @@ import {
   timeout
 } from 'bat-utils/lib/extras-utils'
 
-process.env.SERVICE = 'ledger'
-const config = require('../../config')
+const {
+  BAT_REDIS_URL,
+  BAT_POSTGRES_URL
+} = require('../../env')
+
+const config = require('../../config').generate('eyeshade')
 
 const votingReportWorker = workers['voting-report']
 
 const debug = new SDebug('surveyor-test')
 
-const postgres = new Postgres({ postgres: { url: process.env.BAT_POSTGRES_URL } })
+const postgres = new Postgres({ postgres: { url: BAT_POSTGRES_URL } })
 
 const runtime = {
   config,
   postgres,
-  queue: new Queue({ queue: process.env.BAT_REDIS_URL })
+  queue: new Queue({ queue: BAT_REDIS_URL })
 }
 
 test.afterEach.always(cleanPgDb(postgres))

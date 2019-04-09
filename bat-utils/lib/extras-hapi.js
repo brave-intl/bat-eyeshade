@@ -7,6 +7,10 @@ const wreck = require('wreck')
 const npminfo = require('../npminfo')
 const whitelist = require('./hapi-auth-whitelist')
 
+const {
+  FIXIE_URL
+} = require('../../env')
+
 exports.debug = (info, request) => {
   const debug = new SDebug(info.id)
 
@@ -166,9 +170,9 @@ const WreckProxy = (server, opts) => {
 
   useProxyP = opts.useProxyP
   opts = underscore.omit(opts, [ 'useProxyP' ])
-  if ((!useProxyP) || (!process.env.FIXIE_URL)) return { server: server, opts: opts }
+  if ((!useProxyP) || (!FIXIE_URL)) return { server: server, opts: opts }
 
-  return { server: server, opts: underscore.extend(opts, { agent: new ProxyAgent(process.env.FIXIE_URL) }) }
+  return { server: server, opts: underscore.extend(opts, { agent: new ProxyAgent(FIXIE_URL) }) }
 }
 
 const WreckGet = async (server, opts) => {

@@ -6,6 +6,14 @@ const underscore = require('underscore')
 
 const npminfo = require('../npminfo')
 
+const {
+  DEBUG,
+  DYNO,
+  NEW_RELIC_APP_NAME,
+  BATUTIL_SPACES,
+  NODE_ENV
+} = require('../../env')
+
 const Worker = async (options, runtime) => {
   const debug = new SDebug('worker')
 
@@ -17,7 +25,7 @@ const Worker = async (options, runtime) => {
 
   debug.initialize({ worker: { id: options.id } })
 
-  if (process.env.NODE_ENV !== 'production') {
+  if (NODE_ENV !== 'production') {
     process.on('warning', (warning) => {
       if (warning.name === 'DeprecationWarning') return
 
@@ -88,11 +96,17 @@ const Worker = async (options, runtime) => {
   debug('workers started',
     {
       resolvers: resolvers,
-      env: underscore.pick(process.env, [ 'DEBUG', 'DYNO', 'NEW_RELIC_APP_NAME', 'NODE_ENV', 'BATUTIL_SPACES' ])
+      env: {
+        DEBUG,
+        DYNO,
+        NEW_RELIC_APP_NAME,
+        NODE_ENV,
+        BATUTIL_SPACES
+      }
     })
   runtime.notify(debug, {
     text: os.hostname() + ' ' + npminfo.name + '@' + npminfo.version + ' started ' +
-      (process.env.DYNO || 'worker') + '/' + options.id
+      (DYNO || 'worker') + '/' + options.id
   })
 }
 

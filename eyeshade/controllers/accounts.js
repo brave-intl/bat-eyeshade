@@ -12,6 +12,10 @@ const transactions = require('../lib/transaction')
 const braveHapi = utils.extras.hapi
 const braveJoi = utils.extras.joi
 
+const {
+  ENABLE_ADS_PAYOUT
+} = require('../../env')
+
 const v1 = {}
 
 const settlementDestinationTypes = ['uphold']
@@ -396,7 +400,7 @@ v1.adTransactions = {
     const { postgres } = runtime
     const { amount } = payload
 
-    if (typeof process.env.ENABLE_ADS_PAYOUT === 'undefined') {
+    if (typeof ENABLE_ADS_PAYOUT === 'undefined') {
       return reply(boom.serverUnavailable())
     }
     if (amount <= 0) {

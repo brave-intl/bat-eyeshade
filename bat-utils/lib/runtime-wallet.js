@@ -13,6 +13,8 @@ const whitelist = require('./hapi-auth-whitelist')
 
 const Currency = require('./runtime-currency')
 
+require('../../env') // eslint-disable-line
+
 const debug = new SDebug('wallet')
 
 const upholdBaseUrls = {
@@ -33,7 +35,6 @@ const Wallet = function (config, runtime) {
   this.config = config.wallet
   this.runtime = runtime
   if (config.wallet.uphold) {
-    if ((process.env.FIXIE_URL) && (!process.env.HTTPS_PROXY)) process.env.HTTPS_PROXY = process.env.FIXIE_URL
     this.uphold = this.createUpholdSDK(this.config.uphold.accessToken)
   }
 

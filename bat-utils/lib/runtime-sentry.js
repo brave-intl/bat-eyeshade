@@ -2,6 +2,9 @@ const { URL } = require('url')
 const Raven = require('@sentry/node')
 const SDebug = require('sdebug')
 const underscore = require('underscore')
+const {
+  NODE_ENV
+} = require('../../env')
 
 const debug = new SDebug('sentry')
 
@@ -36,7 +39,7 @@ function Sentry (config, runtime) {
 
   runtime.captureException = captureException
 
-  if (!config.sentry && process.env.NODE_ENV === 'production') {
+  if (!config.sentry && NODE_ENV === 'production') {
     throw new Error('config.sentry undefined')
   }
 

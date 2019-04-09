@@ -15,20 +15,25 @@ const braveHapi = utils.extras.hapi
 const braveUtils = utils.extras.utils
 const whitelist = utils.hapi.auth.whitelist
 
-const { NODE_ENV } = process.env
+const {
+  NODE_ENV,
+  IP_QA_WHITELIST,
+  GRANT_CLAIM_RATE,
+  GRANT_CLAIM_WINDOW
+} = require('../../env')
 const isProduction = NODE_ENV === 'production'
 const rateLimitEnabled = isProduction
 
-const qalist = { addresses: process.env.IP_QA_WHITELIST && process.env.IP_QA_WHITELIST.split(',') }
+const qalist = { addresses: IP_QA_WHITELIST && IP_QA_WHITELIST.split(',') }
 
 const claimRate = {
-  limit: process.env.GRANT_CLAIM_RATE ? Number(process.env.GRANT_CLAIM_RATE) : 50,
-  window: process.env.GRANT_CLAIM_WINDOW ? Number(process.env.GRANT_CLAIM_WINDOW) : 3 * 60 * 60
+  limit: GRANT_CLAIM_RATE ? Number(GRANT_CLAIM_RATE) : 50,
+  window: GRANT_CLAIM_WINDOW ? Number(GRANT_CLAIM_WINDOW) : 3 * 60 * 60
 }
 
 const captchaRate = {
-  limit: process.env.GRANT_CLAIM_RATE ? Number(process.env.GRANT_CLAIM_RATE) : 50,
-  window: process.env.GRANT_CLAIM_WINDOW ? Number(process.env.GRANT_CLAIM_WINDOW) : 3 * 60 * 60
+  limit: GRANT_CLAIM_RATE ? Number(GRANT_CLAIM_RATE) : 50,
+  window: GRANT_CLAIM_WINDOW ? Number(GRANT_CLAIM_WINDOW) : 3 * 60 * 60
 }
 
 if (qalist.addresses) {

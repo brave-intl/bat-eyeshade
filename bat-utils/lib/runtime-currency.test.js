@@ -4,11 +4,13 @@ import Currency from './runtime-currency'
 import BigNumber from 'bignumber.js'
 import test from 'ava'
 import _ from 'underscore'
-import dotenv from 'dotenv'
 import {
   timeout
 } from './extras-utils'
-dotenv.config()
+import {
+  BAT_RATIOS_URL,
+  BAT_RATIOS_TOKEN
+} from '../../env'
 
 const currency = make(Currency)
 
@@ -149,8 +151,8 @@ test('a faulty request delays subsequent requests', async (t) => {
 function make (Constructor = Currency, options = {}) {
   return new Constructor({
     currency: Object.assign({
-      url: process.env.BAT_RATIOS_URL,
-      access_token: process.env.BAT_RATIOS_TOKEN
+      url: BAT_RATIOS_URL,
+      access_token: BAT_RATIOS_TOKEN
     }, options)
   }, {
     captureException: () => {}

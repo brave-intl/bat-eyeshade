@@ -12,8 +12,12 @@ import {
 } from 'bat-utils/lib/extras-utils'
 import { agent } from 'supertest'
 import Postgres from 'bat-utils/lib/runtime-postgres'
-
-const postgres = new Postgres({ postgres: { url: process.env.BAT_POSTGRES_URL } })
+const {
+  BAT_SETTLEMENT_ADDRESS,
+  BAT_POSTGRES_URL,
+  BAT_EYESHADE_SERVER
+} = require('../../env')
+const postgres = new Postgres({ postgres: { url: BAT_POSTGRES_URL } })
 
 test.afterEach.always(async t => {
   await cleanPgDb(postgres)()
@@ -21,7 +25,7 @@ test.afterEach.always(async t => {
 })
 
 test('unauthed requests cannot post settlement', async t => {
-  const unauthedAgent = agent(process.env.BAT_EYESHADE_SERVER)
+  const unauthedAgent = agent(BAT_EYESHADE_SERVER)
   const url = `/v2/publishers/settlement`
   const response = await unauthedAgent.post(url).send({}).expect(401)
   t.true(response.status === 401)
@@ -100,7 +104,7 @@ test('can post a manual settlement from publisher app using token auth', async t
   t.true(manualTx.document_id === manualSettlement.documentId)
   t.true(manualTx.transaction_type === 'manual')
   t.true(manualTx.from_account_type === 'uphold')
-  t.true(manualTx.from_account === process.env.BAT_SETTLEMENT_ADDRESS)
+  t.true(manualTx.from_account === BAT_SETTLEMENT_ADDRESS)
   t.true(manualTx.to_account_type === 'owner')
   t.true(manualTx.to_account === manualSettlement.owner)
   t.true(manualTx.amount === '5.000000000000000000')

@@ -1,6 +1,9 @@
 const moment = require('moment')
-
-const freezeInterval = process.env.FREEZE_SURVEYORS_AGE_DAYS
+const {
+  FREEZE_SURVEYORS_AGE_DAYS,
+  DYNO
+} = require('../../env')
+const freezeInterval = FREEZE_SURVEYORS_AGE_DAYS
 
 const feePercent = 0.05
 
@@ -72,7 +75,7 @@ exports.initialize = async (debug, runtime) => {
     throw new Error('FREEZE_SURVEYORS_AGE_DAYS is not set or not numeric')
   }
 
-  if ((typeof process.env.DYNO === 'undefined') || (process.env.DYNO === 'worker.1')) {
+  if ((typeof DYNO === 'undefined') || (DYNO === 'worker.1')) {
     setTimeout(() => { daily(debug, runtime) }, 5 * 1000)
   }
 }

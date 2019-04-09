@@ -3,9 +3,6 @@
 import whitelist from './hapi-auth-whitelist.js'
 import test from 'ava'
 
-import dotenv from 'dotenv'
-dotenv.config()
-
 test('ipaddr', async t => {
   let request = {
     headers: {

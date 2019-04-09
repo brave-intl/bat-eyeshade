@@ -1,4 +1,3 @@
-
 const path = require('path')
 
 const SDebug = require('sdebug')
@@ -14,6 +13,7 @@ const queue = require('./lib/runtime-queue')
 const sentry = require('./lib/runtime-sentry')
 const slack = require('./lib/runtime-slack')
 const wallet = require('./lib/runtime-wallet')
+const { NODE_ENV } = require('../env')
 
 const hash = {
   cache,
@@ -53,7 +53,7 @@ function Runtime (config) {
   }
 
   if (!config) {
-    config = process.env.NODE_ENV || 'development'
+    config = NODE_ENV || 'development'
   }
   if (typeof config === 'string') {
     config = require(path.join(process.cwd(), 'config', 'config.' + config + '.js'))

@@ -3,9 +3,10 @@
 import Server from './hapi-server'
 import Cache from './runtime-cache'
 import test from 'ava'
-import dotenv from 'dotenv'
 import supertest from 'supertest'
-dotenv.config()
+import {
+  BAT_REDIS_URL
+} from '../../env'
 
 test('hapi throws', async (t) => {
   const message = 'failed in throwing test'
@@ -19,7 +20,7 @@ test('hapi throws', async (t) => {
     cache: new Cache({
       cache: {
         redis: {
-          url: process.env.BAT_REDIS_URL || 'redis://localhost:6379'
+          url: BAT_REDIS_URL || 'redis://localhost:6379'
         }
       }
     })

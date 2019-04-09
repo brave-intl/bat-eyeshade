@@ -13,6 +13,11 @@ const {
   normalizeChannel
 } = require('bat-utils/lib/extras-utils')
 
+const {
+  MONGODB_URI,
+  DATABASE_URL
+} = require('../env')
+
 async function consume (pg, votings) {
   return Promise.all(votings.map(async (voting) => {
     const { publisher, cohort } = voting
@@ -44,9 +49,8 @@ async function consume (pg, votings) {
 }
 
 async function main () {
-  const database = new Database({ database: process.env.MONGODB_URI })
-  // process.env.NODE_ENV = 'production'
-  const pg = new Postgres({ postgres: { url: process.env.DATABASE_URL } })
+  const database = new Database({ database: MONGODB_URI })
+  const pg = new Postgres({ postgres: { url: DATABASE_URL } })
 
   const votingC = database.get('voting', debug)
   const surveyorC = database.get('surveyors', debug)

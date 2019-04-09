@@ -1,180 +1,261 @@
 /* jshint asi: true, node: true, laxbreak: true, laxcomma: true, undef: true, unused: true, esversion: 6 */
+const url = require('url')
+const env = require('./env')
+const {
+  REFERRALS_CURRENCY,
+  REFERRALS_AMOUNT,
+  DATABASE_URL,
+  DYNO,
+  LEDGER_URL,
+  GITHUB_LOGIN_WORLD,
+  GITHUB_LOGIN_BYE,
+  GITHUB_CLIENT_ID,
+  GITHUB_CLIENT_SECRET,
+  IRON_KEYPASS,
+  GITHUB_FORCE_HTTPS,
+  BAT_SETTLEMENT_ADDRESS,
+  BAT_ADS_PAYOUT_ADDRESS,
+  COINBASE_WIDGET_CODE,
+  REDEEMER_URL,
+  BALANCE_URL,
+  BALANCE_TOKEN,
+  REDEEMER_TOKEN,
+  REDEEMER_CARD_ID,
+  SERVICE,
+  CAPTCHA_URL,
+  CAPTCHA_TOKEN,
+  CAPTCHA_BYPASS_TOKEN,
+  UPHOLD_ACCESS_TOKEN,
+  UPHOLD_CLIENT_ID,
+  UPHOLD_CLIENT_SECRET,
+  UPHOLD_ENVIRONMENT,
+  PUBLISHERS_TAKEOVER,
+  PUBLISHERS_URL,
+  PUBLISHERS_TOKEN,
+  ALTCURRENCY,
+  CRYPTO_CURRENCIES,
+  REDIS_URL,
+  REDIS2_URL,
+  SENTRY_DSN,
+  HEROKU_APP_NAME,
+  HEROKU_SLUG_COMMIT,
+  MONGODB_URI,
+  TESTING_COHORTS,
+  NEW_RELIC_LICENSE_KEY,
+  SLACK_CHANNEL,
+  SLACK_ICON_URL,
+  BAT_RATIOS_URL,
+  BAT_RATIOS_TOKEN,
+  SLACK_WEBHOOK,
+  NODE_ENV,
+  GITHUB_ORG,
+  HOST,
+  PORT
+} = env
 
-const services = {
-  ledger: {
-    portno: 3001,
+module.exports = generate(SERVICE)
 
-    f: () => {
-      if (process.env.COINBASE_WIDGET_CODE) {
-        module.exports.wallet.coinbase = { widgetCode : process.env.COINBASE_WIDGET_CODE }
-      }
+function generate (SERVICE) {
+  const booleanHash = {
+    true: true,
+    false: false
+  }
+  const altcurrency = ALTCURRENCY || 'BAT'
+  const cache = {
+    redis: {
+      url: REDIS_URL || 'redis://localhost:6379'
+    }
+  }
+  const database = {
+    mongo: MONGODB_URI || 'localhost/test'
+  }
+  const login = {
+    github: false
+  }
+  const queue = {
+    rsmq: REDIS_URL || 'redis://localhost:6379'
+  }
+  const sentry = {
+    dsn: SENTRY_DSN || false,
+    slug: HEROKU_SLUG_COMMIT || 'test',
+    project: HEROKU_APP_NAME || SERVICE
+  }
+  const newrelic = {
+    key: NEW_RELIC_LICENSE_KEY || false
+  }
+  const wallet = {}
+  const testingCohorts = TESTING_COHORTS ? TESTING_COHORTS.split(',') : []
+  const currency = {
+    altcoins: CRYPTO_CURRENCIES ? CRYPTO_CURRENCIES.split(',') : [ 'BAT', 'BTC', 'ETH', 'LTC' ],
+    url: BAT_RATIOS_URL,
+    access_token: BAT_RATIOS_TOKEN
+  }
 
-      if (process.env.REDEEMER_URL) {
-        module.exports.redeemer =
-        { url               : process.env.REDEEMER_URL   || 'http://127.0.0.1:3333'
-        , access_token      : process.env.REDEEMER_TOKEN || '00000000-0000-4000-0000-000000000000'
-        }
-      }
-      if (process.env.REDEEMER_CARD_ID) {
-        module.exports.redeemer =
-        { cardId               : process.env.REDEEMER_CARD_ID
-        }
-      }
-      if (process.env.BALANCE_URL) {
-        module.exports.balance =
-          { url                 : process.env.BALANCE_URL    || 'http://127.0.0.1:3000'
-          , access_token        : process.env.BALANCE_TOKEN  || '00000000-0000-4000-0000-000000000000'
+  const url2Parse = NODE_ENV === 'production' ? ('https://' + HOST) : ('http://' + '127.0.0.1' + ':' + PORT)
+  const server = url.parse(url2Parse)
+  let slack = null
+  let prometheus = null
+  let redeemer = null
+  let publishers = null
+  let balance = null
+  let captcha = null
+  let referrals = null
+  let postgres = null
+  let ledger = null
+
+  if (BAT_SETTLEMENT_ADDRESS) {
+    wallet.settlementAddress = {
+      BAT: BAT_SETTLEMENT_ADDRESS || '0x7c31560552170ce96c4a7b018e93cddc19dc61b6'
+    }
+  }
+
+  if (BAT_ADS_PAYOUT_ADDRESS) {
+    wallet.adsPayoutAddress = {
+      BAT: BAT_ADS_PAYOUT_ADDRESS || '0x7c31560552170ce96c4a7b018e93cddc19dc61b6'
+    }
+  }
+
+  if (SLACK_WEBHOOK) {
+    slack = {
+      webhook: SLACK_WEBHOOK,
+      channel: SLACK_CHANNEL || '#bat-bot',
+      icon_url: SLACK_ICON_URL || 'https://github.com/brave-intl/bat-ledger/raw/master/documentation/favicon.png'
+    }
+  }
+
+  if (GITHUB_ORG) {
+    login.github = {
+      organization: GITHUB_ORG,
+      world: GITHUB_LOGIN_WORLD || '/documentation',
+      bye: GITHUB_LOGIN_BYE || 'https://example.com',
+      clientId: GITHUB_CLIENT_ID,
+      clientSecret: GITHUB_CLIENT_SECRET,
+      ironKey: IRON_KEYPASS || 'cookie-encryption-password-at-least-32-octets',
+      isSecure: GITHUB_FORCE_HTTPS || false
+    }
+  }
+
+  if (DYNO) {
+    prometheus = {
+      label: SERVICE + '.' + DYNO,
+      redis: REDIS2_URL || REDIS_URL || false
+    }
+  }
+
+  const services = {
+    ledger: {
+
+      f: () => {
+        if (COINBASE_WIDGET_CODE) {
+          wallet.coinbase = {
+            widgetCode : COINBASE_WIDGET_CODE
           }
-      }
-      if (process.env.CAPTCHA_URL) {
-        module.exports.captcha =
-        { url               : process.env.CAPTCHA_URL   || 'http://127.0.0.1:3334'
-        , access_token      : process.env.CAPTCHA_TOKEN || '00000000-0000-4000-0000-000000000000'
-        , bypass            : process.env.CAPTCHA_BYPASS_TOKEN || '00000000-0000-4000-0000-000000000000'
-        }
-      }
-      publishers()
-      uphold()
-    }
-  },
-
-  eyeshade: {
-    portno: 3002,
-
-    f: () => {
-      module.exports.referrals =
-        { currency              : process.env.REFERRALS_CURRENCY || 'USD'
-        , amount                : process.env.REFERRALS_AMOUNT || 5
-        }
-      module.exports.postgres =
-        { url                   : process.env.DATABASE_URL || 'postgres://localhost/test'
-        , schemaVersionCheck    : true
         }
 
-      publishers()
-      uphold()
-    }
-  },
-
-  balance: {
-    portno: 3003,
-
-    f: () => {
-      module.exports.ledger = {
-        url : process.env.LEDGER_URL  || 'http://127.0.0.1:3001'
+        if (REDEEMER_URL) {
+          redeemer = {
+            url: REDEEMER_URL || 'http://127.0.0.1:3333',
+            access_token: REDEEMER_TOKEN || '00000000-0000-4000-0000-000000000000'
+          }
+        }
+        if (REDEEMER_CARD_ID) {
+          redeemer = {
+            cardId: REDEEMER_CARD_ID
+          }
+        }
+        if (BALANCE_URL) {
+          balance = {
+            url: BALANCE_URL || 'http://127.0.0.1:3000',
+            access_token: BALANCE_TOKEN  || '00000000-0000-4000-0000-000000000000'
+          }
+        }
+        if (CAPTCHA_URL) {
+          captcha = {
+            url: CAPTCHA_URL   || 'http://127.0.0.1:3334',
+            access_token: CAPTCHA_TOKEN || '00000000-0000-4000-0000-000000000000',
+            bypass: CAPTCHA_BYPASS_TOKEN || '00000000-0000-4000-0000-000000000000'
+          }
+        }
+        setupPublishers()
+        setupUphold()
       }
+    },
 
-      uphold()
-    }
-  }
-}
+    eyeshade: {
 
-const publishers = () => {
-  module.exports.publishers = {}
-  if (process.env.PUBLISHERS_URL) {
-    const takeover = process.env.PUBLISHERS_TAKEOVER
-    module.exports.publishers =
-      { url                 : process.env.PUBLISHERS_URL    || 'http://127.0.0.1:3000'
-      , access_token        : process.env.PUBLISHERS_TOKEN  || '00000000-0000-4000-0000-000000000000'
-      , takeover            : takeover ? ({ true: true, false: false })[takeover] : false
+      f: () => {
+        referrals = {
+          currency: REFERRALS_CURRENCY || 'USD',
+          amount: REFERRALS_AMOUNT || 5
+        }
+        postgres = {
+          url: DATABASE_URL || 'postgres://localhost/test',
+          schemaVersionCheck: true
+        }
+
+        setupPublishers()
+        setupUphold()
       }
-  }
-}
+    },
 
-const uphold = () => {
-  if ((!process.env.UPHOLD_ACCESS_TOKEN) && (!process.env.UPHOLD_CLIENT_ID)) return
+    balance: {
 
-  module.exports.wallet.uphold =
-  { accessToken       : process.env.UPHOLD_ACCESS_TOKEN         || 'none'
-  , clientId          : process.env.UPHOLD_CLIENT_ID            || 'none'
-  , clientSecret      : process.env.UPHOLD_CLIENT_SECRET        || 'none'
-  , environment       : process.env.UPHOLD_ENVIRONMENT          || 'sandbox'
-  }
-}
+      f: () => {
+        ledger = {
+          url: LEDGER_URL || 'http://127.0.0.1:3001'
+        }
 
-
-const service = services[process.env.SERVICE]
-if (!service) {
-  throw new Error('invalid process.env.SERVICE=' + process.env.SERVICE)
-}
-
-process.env.PORT = process.env.PORT  || service.portno
-
-const SERVICE = process.env.SERVICE.toUpperCase()
-new Array('MONGODB_URI', 'GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET', 'SLACK_CHANNEL', 'SLACK_ICON_URL').forEach((v) => {
-  process.env[v] = process.env[v]  || process.env[SERVICE + '_' + v]
-})
-
-module.exports =
-{ altcurrency           : process.env.ALTCURRENCY               || 'BAT'
-, cache                 :
-  { redis               :
-    { url               : process.env.REDIS_URL                 || 'redis://localhost:6379' }
-  }
-, currency              :
-  { altcoins            : process.env.CRYPTO_CURRENCIES ? process.env.CRYPTO_CURRENCIES.split(',')
-                                                        : [ 'BAT', 'BTC', 'ETH', 'LTC' ] }
-, database              :
-  { mongo               : process.env.MONGODB_URI               || 'localhost/test' }
-, login                 : { github: false }
-, queue                 :
-  { rsmq                : process.env.REDIS_URL                 || 'redis://localhost:6379' }
-, sentry                :
-  { dsn: process.env.SENTRY_DSN          || false
-  , slug: process.env.HEROKU_SLUG_COMMIT || 'test'
-  , project: process.env.HEROKU_APP_NAME  || process.env.SERVICE
-  }
-, newrelic              : { key: process.env.NEW_RELIC_LICENSE_KEY
-                                                                || false }
-, wallet                : { }
-
-, testingCohorts        : process.env.TESTING_COHORTS ? process.env.TESTING_COHORTS.split(',') : []
-, currency:
-  { url: process.env.BAT_RATIOS_URL
-  , access_token: process.env.BAT_RATIOS_TOKEN
-  }
-}
-if (service.f) service.f()
-
-if (process.env.NODE_ENV === 'production') {
-  module.exports.server = require('url').parse('https://' + process.env.HOST)
-} else {
-  module.exports.server = require('url').parse('http://' + '127.0.0.1' + ':' + process.env.PORT)
-}
-
-if (process.env.BAT_SETTLEMENT_ADDRESS) {
-  module.exports.wallet.settlementAddress =
-  { BAT : process.env.BAT_SETTLEMENT_ADDRESS                || '0x7c31560552170ce96c4a7b018e93cddc19dc61b6' }
-}
-
-if (process.env.BAT_ADS_PAYOUT_ADDRESS) {
-  module.exports.wallet.adsPayoutAddress =
-  { BAT : process.env.BAT_ADS_PAYOUT_ADDRESS                || '0x7c31560552170ce96c4a7b018e93cddc19dc61b6' }
-}
-
-if (process.env.SLACK_WEBHOOK) {
-  module.exports.slack =
-  { webhook             : process.env.SLACK_WEBHOOK
-  , channel             : process.env.SLACK_CHANNEL             || '#bat-bot'
-  , icon_url            : process.env.SLACK_ICON_URL            || 'https://github.com/brave-intl/bat-ledger/raw/master/documentation/favicon.png'
-  }
-}
-
-if (process.env.GITHUB_ORG) {
-  module.exports.login.github =
-  { organization        : process.env.GITHUB_ORG
-  , world               : process.env.GITHUB_LOGIN_WORLD        || '/documentation'
-  , bye                 : process.env.GITHUB_LOGIN_BYE          || 'https://example.com'
-  , clientId            : process.env.GITHUB_CLIENT_ID
-  , clientSecret        : process.env.GITHUB_CLIENT_SECRET
-  , ironKey             : process.env.IRON_KEYPASS              || 'cookie-encryption-password-at-least-32-octets'
-  , isSecure            : process.env.GITHUB_FORCE_HTTPS        || false
-  }
-}
-
-if (process.env.DYNO) {
-  module.exports.prometheus =
-    { label              : process.env.SERVICE + '.' + process.env.DYNO
-    , redis              : process.env.REDIS2_URL               || process.env.REDIS_URL               ||  false
+        setupUphold()
+      }
     }
+  }
+  const service = services[SERVICE]
+
+  if (service && service.f) {
+    service.f()
+  }
+  return {
+    generate,
+    altcurrency,
+    cache,
+    database,
+    queue,
+    sentry,
+    newrelic,
+    testingCohorts,
+    currency,
+    postgres,
+    referrals,
+    prometheus,
+    wallet,
+    slack,
+    login,
+    server,
+    redeemer,
+    publishers,
+    captcha
+  }
+
+  function setupPublishers () {
+    publishers = {}
+    if (PUBLISHERS_URL) {
+      const takeover = PUBLISHERS_TAKEOVER
+      publishers = {
+        url: PUBLISHERS_URL || 'http://127.0.0.1:3000',
+        access_token: PUBLISHERS_TOKEN || '00000000-0000-4000-0000-000000000000',
+        takeover: takeover ? booleanHash[takeover] : false
+      }
+    }
+  }
+
+  function setupUphold () {
+    if (!UPHOLD_ACCESS_TOKEN && !UPHOLD_CLIENT_ID) return
+
+    wallet.uphold = {
+      accessToken: UPHOLD_ACCESS_TOKEN || 'none',
+      clientId: UPHOLD_CLIENT_ID || 'none',
+      clientSecret: UPHOLD_CLIENT_SECRET || 'none',
+      environment: UPHOLD_ENVIRONMENT || 'sandbox'
+    }
+  }
 }

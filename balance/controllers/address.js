@@ -6,6 +6,7 @@ const SDebug = require('sdebug')
 const utils = require('bat-utils')
 const braveHapi = utils.extras.hapi
 const braveJoi = utils.extras.joi
+const { BALANCE_CACHE_TTL_S } = require('../../env')
 
 const plugins = {
   rateLimit: {
@@ -17,7 +18,7 @@ const plugins = {
   }
 }
 
-const expireIn = process.env.BALANCE_CACHE_TTL_S || 60 // 1 minute default
+const expireIn = BALANCE_CACHE_TTL_S || 60 // 1 minute default
 const expireSettings = {
   EX: expireIn
 }

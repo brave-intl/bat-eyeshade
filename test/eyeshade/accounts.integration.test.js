@@ -28,11 +28,17 @@ docId.toHexString = docId.toString
 const settlementId = uuidV4().toLowerCase()
 const ownerId = 'publishers#uuid:' + uuidV4().toLowerCase()
 const toOwnerId = 'publishers#uuid:' + uuidV4().toLowerCase()
+const {
+  BAT_EYESHADE_SERVER,
+  BAT_POSTGRES_URL,
+  BAT_RATIOS_URL,
+  BAT_RATIOS_TOKEN
+} = require('../../env')
 const runtime = new Runtime({
-  postgres: { url: process.env.BAT_POSTGRES_URL },
+  postgres: { url: BAT_POSTGRES_URL },
   currency: {
-    url: process.env.BAT_RATIOS_URL,
-    access_token: process.env.BAT_RATIOS_TOKEN
+    url: BAT_RATIOS_URL,
+    access_token: BAT_RATIOS_TOKEN
   },
   wallet: {
     settlementAddress: { 'BAT': '0xdeadbeef' },
@@ -84,7 +90,7 @@ test('check auth scope', async (t) => {
   t.plan(0)
   const AUTH = 'Authorization'
   const KEY = `Bearer fake`
-  const unauthed = agent(process.env.BAT_EYESHADE_SERVER)
+  const unauthed = agent(BAT_EYESHADE_SERVER)
   await unauthed.get('/v1/accounts/settlements/referrals/total').expect(401)
   await unauthed.get('/v1/accounts/earnings/referral/total').expect(401)
   await unauthed.get('/v1/accounts/owner/transactions').expect(401)
