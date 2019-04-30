@@ -1,35 +1,18 @@
 const dotenv = require('dotenv')
+dotenv.config()
 const config = require('../config.js')
 const utils = require('../bat-utils')
-
-const addressControllers = require('./controllers/address')
-
-const {
-  hapi,
-  Runtime
-} = utils
-
-dotenv.config()
+const { Runtime } = utils
 
 Runtime.newrelic.setupNewrelic(config, __filename)
 
-const {
-  controllers,
-  server: hapiServer
-} = hapi
-
-const parentModules = [
-  addressControllers
-]
-
+const app = require('./app')
 const options = {
-  parentModules,
-  routes: controllers.index,
-  controllers: controllers,
-  module: module
+  port: process.env.PORT
 }
 
 config.database = false
 config.queue = false
 
-module.exports = hapiServer(options, new Runtime(config))
+const runtime = new Runtime(config)
+module.exports = app(options, runtime)

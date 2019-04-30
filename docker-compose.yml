@@ -5,25 +5,49 @@ networks:
     driver: bridge
 
 services:
+  # mongo
   mongo:
-    container_name: ledger-mongo
+    container_name: mongo
     image: mongo:3.6.7
     ports:
       - "3010:27017"
     networks:
       - ledger
-  redis:
+  # redis
+  ledger-redis:
     container_name: ledger-redis
     image: redis:latest
     ports:
       - "3011:6379"
     networks:
       - ledger
-  eyeshade-postgres:
-    container_name: eyeshade-postgres
+  eyeshade-redis:
+    container_name: eyeshade-redis
+    image: redis:latest
+    ports:
+      - "3012:6379"
+    networks:
+      - ledger
+  balance-redis:
+    container_name: balance-redis
+    image: redis:latest
+    ports:
+      - "3013:6379"
+    networks:
+      - ledger
+  grant-redis:
+    container_name: grant-redis
+    ports:
+      - "3014:6379"
+    image: redis:latest
+    networks:
+      - ledger
+  # postgres
+  postgres:
+    container_name: postgres
     image: postgres:10.4
     ports:
-      - "3012:5432"
+      - "3020:5432"
     networks:
       - ledger
     environment:
@@ -36,13 +60,14 @@ services:
       file: base.yml
       service: ledger
     environment:
-      - "DATABASE_URL=postgres://eyeshade:password@eyeshade-postgres/eyeshade"
+      - "DATABASE_URL=postgres://eyeshade:password@postgres/eyeshade"
       - "MONGODB_URI=mongodb://mongo/eyeshade"
       - "SERVICE=eyeshade"
+      - "REDIS_URL=redis://eyeshade-redis:6379"
     depends_on:
       - mongo
-      - redis
-      - eyeshade-postgres
+      - eyeshade-redis
+      - postgres
     networks:
       - ledger
   eyeshade-web:
@@ -54,13 +79,14 @@ services:
       file: base.yml
       service: ledger
     environment:
-      - "DATABASE_URL=postgres://eyeshade:password@eyeshade-postgres/eyeshade"
+      - "DATABASE_URL=postgres://eyeshade:password@postgres/eyeshade"
       - "MONGODB_URI=mongodb://mongo/eyeshade"
       - "SERVICE=eyeshade"
+      - "REDIS_URL=redis://eyeshade-redis:6379"
     depends_on:
       - mongo
-      - redis
-      - eyeshade-postgres
+      - eyeshade-redis
+      - postgres
     networks:
       - ledger
   ledger-worker:
@@ -71,9 +97,11 @@ services:
       service: ledger
     environment:
       - "SERVICE=ledger"
+      - "REDIS_URL=redis://ledger-redis:6379"
+      - "MONGODB_URI=mongodb://mongo/ledger"
     depends_on:
       - mongo
-      - redis
+      - ledger-redis
     networks:
       - ledger
   ledger-web:
@@ -86,10 +114,12 @@ services:
       service: ledger
     environment:
       - "SERVICE=ledger"
+      - "REDIS_URL=redis://ledger-redis:6379"
       - PUBLISHERS_TAKEOVER
+      - "MONGODB_URI=mongodb://mongo/ledger"
     depends_on:
       - mongo
-      - redis
+      - ledger-redis
     networks:
       - ledger
   balance-web:
@@ -102,15 +132,9 @@ services:
       service: ledger
     environment:
       - "SERVICE=balance"
+      - "REDIS_URL=redis://balance-redis:6379"
     depends_on:
-      - redis
-    networks:
-      - ledger
-  grant-redis:
-    container_name: grant-redis
-    ports:
-      - "3013:6379"
-    image: redis:latest
+      - balance-redis
     networks:
       - ledger
   grant-web:
@@ -119,7 +143,7 @@ services:
     ports:
       - "3333:3333"
     environment:
-      - "REDIS_URL=${REDIS_URL-redis://grant-redis:6379}"
+      - "REDIS_URL=redis://grant-redis:6379"
       - BAT_SETTLEMENT_ADDRESS
       - GRANT_SIGNATOR_PUBLIC_KEY
       - GRANT_WALLET_CARD_ID

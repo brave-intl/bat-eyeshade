@@ -47,12 +47,15 @@ const Server = async (options, runtime) => {
   const graylist = { addresses: process.env.IP_GRAYLIST && process.env.IP_GRAYLIST.split(',') }
   const server = new hapi.Server()
 
-  server.connection({ port: process.env.PORT })
-
   if (!runtime) {
     runtime = options
     options = {}
   }
+
+  server.connection({
+    port: options.port
+  })
+
   underscore.defaults(options, { id: server.info.id, module: module, headersP: true, remoteP: true })
   if (!options.routes) options.routes = require('./controllers/index')
 

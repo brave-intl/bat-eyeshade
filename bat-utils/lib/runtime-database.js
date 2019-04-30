@@ -19,7 +19,7 @@ const Database = function (config, runtime) {
   this.db = monk(this.config, (err, db) => {
     if (!err) return
 
-    debug('database', { message: err.message })
+    debug('database', { message: err.message, config: this.config })
     throw err
   })
 

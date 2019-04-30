@@ -10,12 +10,18 @@ const BigNumber = require('bignumber.js')
 const {
   timeout
 } = require('bat-utils/lib/extras-utils')
+const {
+  Runtime
+} = require('bat-utils')
+const ledgerApp = require('../ledger/app')
+const eyeshadeApp = require('../eyeshade/app')
+const balanceApp = require('../balance/app')
 const SDebug = require('sdebug')
 const debug = new SDebug('test')
 
 const braveYoutubeOwner = 'publishers#uuid:' + uuidV4().toLowerCase()
 const braveYoutubePublisher = `youtube#channel:UCFNTTISby1c_H-rm5Ww5rZg`
-
+let completedSetupServers = null
 const eyeshadeCollections = [
   'grants',
   'owners',
@@ -55,9 +61,12 @@ const formURL = createFormURL({
 })
 
 const AUTH_KEY = 'Authorization'
-const eyeshadeAgent = agent(process.env.BAT_EYESHADE_SERVER).set(AUTH_KEY, token)
-const ledgerAgent = agent(process.env.BAT_LEDGER_SERVER).set(AUTH_KEY, token)
-const balanceAgent = agent(process.env.BAT_BALANCE_SERVER).set(AUTH_KEY, token)
+const ledgerRuntime = makeRuntime('ledger')
+const ledgerServer = async (port, runtime) => ledgerApp({ port }, runtime)
+const eyeshadeRuntime = makeRuntime('eyeshade')
+const eyeshadeServer = async (port, runtime) => eyeshadeApp({ port }, runtime)
+const balanceRuntime = makeRuntime('balance')
+const balanceServer = async (port, runtime) => balanceApp({ port }, runtime)
 
 const status = (expectation) => (res) => {
   if (!res) {
@@ -153,6 +162,17 @@ const cleanRedisDb = async () => {
 }
 
 module.exports = {
+  ledgerServer,
+  eyeshadeServer,
+  balanceServer,
+  ledgerRuntime,
+  eyeshadeRuntime,
+  balanceRuntime,
+  serverContext,
+  setupServers,
+  makeRuntime,
+  AUTH_KEY,
+  token,
   makeSettlement,
   createSurveyor,
   getSurveyor,
@@ -161,9 +181,6 @@ module.exports = {
   ok,
   debug,
   status,
-  eyeshadeAgent,
-  ledgerAgent,
-  balanceAgent,
   assertWithinBounds,
   connectToDb,
   dbUri,
@@ -180,29 +197,29 @@ module.exports = {
 
 function cleanDbs () {
   return Promise.all([
+    cleanPgDb(),
     cleanEyeshadeDb(),
     cleanLedgerDb(),
     cleanRedisDb()
   ])
 }
 
-function cleanPgDb (client) {
-  return () => {
-    return Promise.all([
-      client.query('DELETE from transactions;'),
-      client.query('DELETE from surveyor_groups;'),
-      client.query('DELETE from votes;')
-    ]).then(() => client.query('REFRESH MATERIALIZED VIEW account_balances;'))
-  }
+async function cleanPgDb () {
+  const { postgres } = eyeshadeRuntime
+  return Promise.all([
+    postgres.query('DELETE from transactions;'),
+    postgres.query('DELETE from surveyor_groups;'),
+    postgres.query('DELETE from votes;')
+  ]).then(() => postgres.query('REFRESH MATERIALIZED VIEW account_balances;'))
 }
 
-function getSurveyor (id) {
-  return ledgerAgent
+function getSurveyor (agent, id) {
+  return agent
     .get(`/v2/surveyor/contribution/${id || 'current'}`)
     .expect(ok)
 }
 
-function createSurveyor (options = {}) {
+function createSurveyor (agent, options = {}) {
   const {
     votes = 1,
     rate = 1,
@@ -218,7 +235,7 @@ function createSurveyor (options = {}) {
       probi: probi || new BigNumber(votes * rate).times('1e18').toString()
     }
   }
-  return ledgerAgent.post(url).send(data).expect(ok)
+  return agent.post(url).send(data).expect(ok)
 }
 
 function statsUrl () {
@@ -252,4 +269,142 @@ function makeSettlement (type, balance, overwrites = {}) {
     address: uuidV4(),
     hash: uuidV4()
   }, overwrites)
+}
+
+function makeRuntime (service, extension = {}) {
+  const REDIS_KEY = `BAT_${service.toUpperCase()}_REDIS_URL`
+  const {
+    [REDIS_KEY]: BAT_REDIS_URL,
+    SERVICE,
+    DYNO,
+    BAT_EYESHADE_REDIS_URL,
+    TESTING_COHORTS,
+    BAT_RATIOS_URL,
+    BAT_RATIOS_TOKEN,
+    REFERRALS_CURRENCY,
+    REFERRALS_AMOUNT,
+    BAT_POSTGRES_URL,
+    REDEEMER_URL,
+    REDEEMER_TOKEN,
+    CAPTCHA_URL,
+    CAPTCHA_TOKEN,
+    CAPTCHA_BYPASS_TOKEN,
+    UPHOLD_ACCESS_TOKEN,
+    UPHOLD_CLIENT_ID,
+    UPHOLD_CLIENT_SECRET,
+    UPHOLD_ENVIRONMENT,
+    BAT_SETTLEMENT_ADDRESS,
+    BAT_ADS_PAYOUT_ADDRESS,
+    SENTRY_DSN,
+    HEROKU_SLUG_COMMIT,
+    HEROKU_APP_NAME,
+    BAT_LEDGER_SERVER,
+    BAT_MONGODB_URI
+  } = process.env
+  // console.trace(BAT_MONGODB_URI, service)
+  const config = Object.assign({
+    testingCohorts: TESTING_COHORTS ? TESTING_COHORTS.split(',') : [],
+    currency: {
+      url: BAT_RATIOS_URL,
+      access_token: BAT_RATIOS_TOKEN
+    },
+    referrals: {
+      currency: REFERRALS_CURRENCY || 'USD',
+      amount: REFERRALS_AMOUNT || 5
+    },
+    postgres: service === 'eyeshade' ? { url: BAT_POSTGRES_URL } : false,
+    redeemer: {
+      url: REDEEMER_URL || 'http://127.0.0.1:3333',
+      access_token: REDEEMER_TOKEN || '00000000-0000-4000-0000-000000000000'
+    },
+    captcha: {
+      url: CAPTCHA_URL || 'http://127.0.0.1:3334',
+      access_token: CAPTCHA_TOKEN || '00000000-0000-4000-0000-000000000000',
+      bypass: CAPTCHA_BYPASS_TOKEN || '00000000-0000-4000-0000-000000000000'
+    },
+    wallet: {
+      uphold: {
+        accessToken: UPHOLD_ACCESS_TOKEN || 'none',
+        clientId: UPHOLD_CLIENT_ID || 'none',
+        clientSecret: UPHOLD_CLIENT_SECRET || 'none',
+        environment: UPHOLD_ENVIRONMENT || 'sandbox'
+      },
+      settlementAddress: { BAT: BAT_SETTLEMENT_ADDRESS },
+      adsPayoutAddress: { BAT: BAT_ADS_PAYOUT_ADDRESS }
+    },
+    server: {},
+    sentry: {
+      dsn: SENTRY_DSN || false,
+      slug: HEROKU_SLUG_COMMIT || 'test',
+      project: HEROKU_APP_NAME || service
+    },
+    prometheus: {
+      label: SERVICE + '.' + (DYNO || 'web.1'),
+      redis: BAT_REDIS_URL || false
+    },
+    newrelic: {
+      key: false
+    },
+    ledger: {
+      url: BAT_LEDGER_SERVER
+    },
+    login: {
+      github: false
+    },
+    database: {
+      mongo: BAT_MONGODB_URI + service
+    },
+    cache: {
+      redis: {
+        url: BAT_REDIS_URL
+      }
+    },
+    // all queues go to eyeshade
+    queue: {
+      rsmq: BAT_EYESHADE_REDIS_URL
+    }
+  }, extension)
+  return new Runtime(config)
+}
+
+async function generateServers () {
+  const serverLedger = await ledgerServer(3001, ledgerRuntime)
+  const serverEyeshade = await eyeshadeServer(3002, eyeshadeRuntime)
+  const serverBalance = await balanceServer(3003, balanceRuntime)
+  await serverLedger.started
+  await serverEyeshade.started
+  await serverBalance.started
+  const agentLedger = agent(serverLedger.listener).set(AUTH_KEY, token)
+  const agentEyeshade = agent(serverEyeshade.listener).set(AUTH_KEY, token)
+  const agentBalance = agent(serverBalance.listener).set(AUTH_KEY, token)
+  return {
+    ledger: {
+      app: ledgerApp,
+      runtime: ledgerRuntime,
+      server: serverLedger,
+      agent: agentLedger
+    },
+    eyeshade: {
+      app: eyeshadeApp,
+      runtime: eyeshadeRuntime,
+      server: serverEyeshade,
+      agent: agentEyeshade
+    },
+    balance: {
+      app: balanceApp,
+      runtime: balanceRuntime,
+      server: serverBalance,
+      agent: agentBalance
+    }
+  }
+}
+
+async function serverContext (t) {
+  const servers = await setupServers()
+  Object.assign(t.context, servers)
+}
+
+async function setupServers () {
+  completedSetupServers = completedSetupServers || await generateServers()
+  return completedSetupServers
 }

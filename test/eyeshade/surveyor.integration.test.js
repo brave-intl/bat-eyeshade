@@ -1,8 +1,6 @@
 import {
   serial as test
 } from 'ava'
-import Postgres from 'bat-utils/lib/runtime-postgres'
-import Queue from 'bat-utils/lib/runtime-queue'
 import SDebug from 'sdebug'
 import {
   workers
@@ -13,38 +11,30 @@ import {
 import {
   createSurveyor,
   getSurveyor,
-  cleanPgDb
+  cleanDbs,
+  serverContext
 } from '../utils'
 import {
   timeout
 } from 'bat-utils/lib/extras-utils'
 
-process.env.SERVICE = 'ledger'
-const config = require('../../config')
-
 const votingReportWorker = workers['voting-report']
 
 const debug = new SDebug('surveyor-test')
 
-const postgres = new Postgres({ postgres: { url: process.env.BAT_POSTGRES_URL } })
-
-const runtime = {
-  config,
-  postgres,
-  queue: new Queue({ queue: process.env.BAT_REDIS_URL })
-}
-
-test.afterEach.always(cleanPgDb(postgres))
+test.before(serverContext)
+test.afterEach.always(cleanDbs)
 
 test('verify frozen occurs when daily is run', async t => {
   t.plan(12)
   let body
+  const { ledger, eyeshade } = t.context
 
-  await createSurveyor()
+  await createSurveyor(ledger.agent)
   // just made value
-  ;({ body } = await getSurveyor())
+  ;({ body } = await getSurveyor(ledger.agent))
   const { surveyorId } = body
-  await waitUntilPropagated(querySurveyor, surveyorId)
+  await waitUntilPropagated(querySurveyor, eyeshade.runtime, surveyorId)
   // does not freeze if midnight is before creation date
   // vote on surveyor, no rejectedVotes yet
   const publisher = 'fake-publisher'
@@ -59,35 +49,37 @@ test('verify frozen occurs when daily is run', async t => {
 })
 
 async function tryFreeze (t, dayShift, expect, surveyorId) {
+  const { runtime } = t.context.eyeshade
   await freezeOldSurveyors(debug, runtime, dayShift)
   // beware of cursor
-  const surveyor = await querySurveyor(surveyorId)
+  const surveyor = await querySurveyor(runtime, surveyorId)
   t.is(surveyor.rowCount, 1)
   t.is(surveyor.rows[0].frozen, expect)
 }
 
-function querySurveyor (surveyorId) {
-  return postgres.query('select * from surveyor_groups where id = $1 limit 1;', [surveyorId])
+function querySurveyor (runtime, surveyorId) {
+  return runtime.postgres.query('select * from surveyor_groups where id = $1 limit 1;', [surveyorId])
 }
 
-function queryVotes (surveyorId) {
-  return postgres.query('select * from votes where surveyor_id = $1 limit 1;', [surveyorId])
+function queryVotes (runtime, surveyorId) {
+  return runtime.postgres.query('select * from votes where surveyor_id = $1 limit 1;', [surveyorId])
 }
 
-async function waitUntilPropagated (fn, surveyorId) {
-  let finished = await fn(surveyorId)
+async function waitUntilPropagated (fn, runtime, surveyorId) {
+  let finished = await fn(runtime, surveyorId)
   while (finished.rowCount !== 1) {
     await timeout(2000)
-    finished = await fn(surveyorId)
+    finished = await fn(runtime, surveyorId)
   }
 }
 
 async function voteAndCheckTally (t, publisher, surveyorId, count) {
+  const { runtime } = t.context.eyeshade
   await votingReportWorker(debug, runtime, {
     surveyorId,
     publisher
   })
-  const votes = await queryVotes(surveyorId)
+  const votes = await queryVotes(runtime, surveyorId)
   t.is(votes.rowCount, 1)
   t.is(votes.rows[0].tally, count)
 }

@@ -8,6 +8,7 @@ const Postgres = function (config, runtime) {
   if (!(this instanceof Postgres)) return new Postgres(config, runtime)
 
   if (!config.postgres) return
+  this.config = config.postgres
   this.pool = new Pool({ connectionString: config.postgres.url, ssl: process.env.NODE_ENV === 'production' })
 
   this.pool.on('error', (err, client) => {

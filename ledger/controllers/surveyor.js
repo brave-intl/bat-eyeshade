@@ -507,6 +507,9 @@ const provision = async (debug, runtime, surveyorId, bump) => {
   await Promise.all(contributionSurveyors.map(async (cSurveyor) => {
     let count, vSurveyor
 
+    if (!cSurveyor.payload.adFree) {
+      return
+    }
     if (!cSurveyor.cohorts) cSurveyor.cohorts = {}
 
     const desiredCount = ((cSurveyor.payload.adFree.votes * 4) + bump + slop)

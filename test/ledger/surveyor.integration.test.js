@@ -1,37 +1,53 @@
 import { serial as test } from 'ava'
-import {
-  Runtime
-} from 'bat-utils'
 import _ from 'underscore'
 import {
   timeout
 } from 'bat-utils/lib/extras-utils'
 import BigNumber from 'bignumber.js'
+import supertest from 'supertest'
+import Server from '../../ledger/app'
 import {
   addSurveyorChoices
 } from '../../ledger/controllers/surveyor'
 import {
+  makeRuntime,
+  AUTH_KEY,
+  token,
   getSurveyor,
   connectToDb,
   createSurveyor,
-  ledgerAgent,
   cleanDbs,
   cleanPgDb,
   ok
 } from '../utils'
 
-const runtime = new Runtime({
+let ledgerServer = null
+let ledgerAgent = null
+
+const runtime = makeRuntime('ledger', {
   postgres: {
     url: process.env.BAT_POSTGRES_URL
-  },
-  currency: {
-    url: process.env.BAT_RATIOS_URL,
-    access_token: process.env.BAT_RATIOS_TOKEN
   }
+})
+
+test.before(async () => {
+  await cleanDbs()
+  ledgerServer = await Server({}, runtime)
+  await ledgerServer.started
+  ledgerAgent = await supertest.agent(ledgerServer.listener).set(AUTH_KEY, token)
 })
 
 test.afterEach.always(cleanDbs)
 test.afterEach.always(cleanPgDb(runtime.postgres))
+
+test.after.always(async () => {
+  if (!ledgerAgent) {
+    return
+  }
+  await ledgerServer.stop({
+    timeout: 1
+  })
+})
 
 test('verify voting batching endpoint does not error', async t => {
   t.plan(0)

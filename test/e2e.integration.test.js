@@ -65,8 +65,10 @@ test.afterEach.always(async t => {
 
 test('ledger : user contribution workflow with uphold BAT wallet', async t => {
   // Create surveyors
+  const { ledger } = t.context
+  const { agent } = ledger
   const probi12 = (new BigNumber(12)).times(1e18).toString()
-  const surveyorId = (await createSurveyor({ rate: 1, votes: 12 })).body.surveyorId
+  const surveyorId = (await createSurveyor(agent, { rate: 1, votes: 12 })).body.surveyorId
 
   // Create user wallet
   let response, body
@@ -293,7 +295,9 @@ WHERE
 
 test('ledger : grant contribution workflow with uphold BAT wallet', async t => {
   // Create surveyors
-  const surveyorId = (await createSurveyor({ rate: 1, votes: 12 })).body.surveyorId
+  const { ledger } = t.context
+  const { agent } = ledger
+  const surveyorId = (await createSurveyor(agent, { rate: 1, votes: 12 })).body.surveyorId
 
   // Create promotion and grants
   const promotionId = '902e7e4d-c2de-4d5d-aaa3-ee8fee69f7f3'
@@ -412,7 +416,9 @@ test('ledger : grant contribution workflow with uphold BAT wallet', async t => {
 
 test('ledger : user + grant contribution workflow with uphold BAT wallet', async t => {
   // Create surveyors
-  const surveyorId = (await createSurveyor({ rate: 1, votes: 12 })).body.surveyorId
+  const { ledger } = t.context
+  const { agent } = ledger
+  const surveyorId = (await createSurveyor(agent, { rate: 1, votes: 12 })).body.surveyorId
 
   // Create promotion and grants
   const promotionId = '902e7e4d-c2de-4d5d-aaa3-ee8fee69f7f3'

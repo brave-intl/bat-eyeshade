@@ -32,7 +32,7 @@ Prometheus.prototype.plugin = function () {
   const plugin = {
     register: (server, o, done) => {
       let name
-
+      console.trace("setup prometheus")
       name = 'http_request_duration_milliseconds'
       registry.removeSingleMetric(name)
       const httpRequestDurationMilliseconds = new client.Summary({

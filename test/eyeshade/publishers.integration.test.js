@@ -2,33 +2,27 @@
 import { serial as test } from 'ava'
 import uuidV4 from 'uuid/v4'
 import {
+  serverContext,
   cleanDbs,
-  cleanPgDb,
-  eyeshadeAgent,
   connectToDb
 } from '../utils'
 import {
   timeout
 } from 'bat-utils/lib/extras-utils'
-import { agent } from 'supertest'
-import Postgres from 'bat-utils/lib/runtime-postgres'
 
-const postgres = new Postgres({ postgres: { url: process.env.BAT_POSTGRES_URL } })
-
-test.afterEach.always(async t => {
-  await cleanPgDb(postgres)()
-  await cleanDbs()
-})
+test.before(serverContext)
+test.afterEach.always(cleanDbs)
 
 test('unauthed requests cannot post settlement', async t => {
-  const unauthedAgent = agent(process.env.BAT_EYESHADE_SERVER)
   const url = `/v2/publishers/settlement`
-  const response = await unauthedAgent.post(url).send({}).expect(401)
+  const { agent } = t.context.eyeshade
+  const response = await agent.post(url).send({}).expect(401)
   t.true(response.status === 401)
 })
 
 test('cannot post payouts if the publisher field is blank and type is not manual', async t => {
   const url = `/v2/publishers/settlement`
+  const { agent } = t.context.eyeshade
   const manualSettlement = {
     owner: 'publishers#uuid:' + uuidV4().toLowerCase(),
     publisher: '',
@@ -45,15 +39,16 @@ test('cannot post payouts if the publisher field is blank and type is not manual
     hash: uuidV4().toLowerCase()
   }
 
-  const reponse = await eyeshadeAgent.post(url).send([manualSettlement])
+  const reponse = await agent.post(url).send([manualSettlement])
   t.true(reponse.status === 400)
 })
 
 test('can post a manual settlement from publisher app using token auth', async t => {
   const url = `/v2/publishers/settlement`
+  const { agent, runtime } = t.context.eyeshade
   const eyeshadeMongo = await connectToDb('eyeshade')
   const settlements = eyeshadeMongo.collection('settlements')
-  const client = await postgres.connect()
+  const client = await runtime.postgres.connect()
 
   const manualSettlement = {
     owner: 'publishers#uuid:' + uuidV4().toLowerCase(),
@@ -71,7 +66,7 @@ test('can post a manual settlement from publisher app using token auth', async t
     hash: uuidV4().toLowerCase()
   }
 
-  await eyeshadeAgent.post(url).send([manualSettlement]).expect(200)
+  await agent.post(url).send([manualSettlement]).expect(200)
 
   // ensure the manual settlement doc was created with the document id
   const settlementDoc = await settlements.findOne({settlementId: manualSettlement.transactionId})
@@ -124,6 +119,7 @@ test('can post a manual settlement from publisher app using token auth', async t
 
 test('only can post settlement files under to 20mbs', async t => {
   const url = `/v2/publishers/settlement`
+  const { agent } = t.context.eyeshade
 
   let bigSettlement = {
     owner: 'publishers#uuid:' + uuidV4().toLowerCase(),
@@ -158,11 +154,11 @@ test('only can post settlement files under to 20mbs', async t => {
   }
 
   // ensure settlement files > 20mb fail
-  let response = await eyeshadeAgent.post(url).send([bigSettlement])
+  let response = await agent.post(url).send([bigSettlement])
   t.true(response.statusCode === 413)
   t.true(response.body.message === 'Payload content length greater than maximum allowed: 20971520')
 
   // ensure small settlement files succeed
-  response = await eyeshadeAgent.post(url).send([smallSettlement])
+  response = await agent.post(url).send([smallSettlement])
   t.true(response.statusCode === 200)
 })

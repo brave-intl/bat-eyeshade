@@ -1,12 +1,12 @@
 'use strict'
 
 import { serial as test } from 'ava'
-import Postgres from 'bat-utils/lib/runtime-postgres'
-
-const postgres = new Postgres({ postgres: { url: process.env.BAT_POSTGRES_URL } })
+import {
+  eyeshadeRuntime
+} from '../utils'
 
 test('migrations table is up-to-date', async t => {
-  const latestInMigrationsTable = (await postgres.query('select id from migrations order by id desc limit 1;', [])).rows[0].id
+  const latestInMigrationsTable = (await eyeshadeRuntime.postgres.query('select id from migrations order by id desc limit 1;', [])).rows[0].id
   const latestInMigrationsFolder = require('../../eyeshade/migrations/current')
 
   t.true(latestInMigrationsTable === latestInMigrationsFolder)

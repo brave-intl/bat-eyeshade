@@ -5,26 +5,13 @@ import {
 } from 'ava'
 import uuidV4 from 'uuid/v4'
 import {
-  cleanPgDb,
   cleanDbs,
-  dbUri
+  serverContext
 } from '../utils'
-import Postgres from 'bat-utils/lib/runtime-postgres'
 import { monthly } from '../../eyeshade/workers/ads'
-import { Runtime } from 'bat-utils'
 
-const postgres = new Postgres({ postgres: { url: process.env.BAT_POSTGRES_URL } })
-const runtime = new Runtime({
-  postgres: { url: process.env.BAT_POSTGRES_URL },
-  database: {
-    mongo: dbUri('ledger')
-  }
-})
-
-test.afterEach.always(async t => {
-  await cleanPgDb(postgres)()
-  await cleanDbs()
-})
+test.before(serverContext)
+test.afterEach.always(cleanDbs)
 
 test('ads payout report cron job takes a snapshot of balances', async t => {
   const ledgerMongo = runtime.database

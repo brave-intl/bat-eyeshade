@@ -2,35 +2,19 @@ require('dotenv').config()
 if (!process.env.BATUTIL_SPACES) {
   process.env.BATUTIL_SPACES = '*,-extras.worker'
 }
-const { Runtime, hapi } = require('bat-utils')
-const { controllers, server } = hapi
+const { Runtime } = require('bat-utils')
 
 const config = require('../config.js')
 
-const accountsController = require('./controllers/accounts')
-const ownersController = require('./controllers/owners')
-const publishersController = require('./controllers/publishers')
-const referralsController = require('./controllers/referrals')
-
 Runtime.newrelic.setupNewrelic(config, __filename)
 
-const parentModules = [
-  accountsController,
-  ownersController,
-  publishersController,
-  referralsController
-]
-
+const app = require('./app')
 const options = {
-  parentModules,
-  routes: controllers.index,
-  controllers: controllers,
-  module: module,
-  headersP: false,
-  remoteP: true
+  port: process.env.PORT
 }
 
 config.cache = false
 config.postgres.schemaVersion = require('./migrations/current')
 
-module.exports = server(options, new Runtime(config))
+const runtime = new Runtime(config)
+module.exports = app(options, runtime)

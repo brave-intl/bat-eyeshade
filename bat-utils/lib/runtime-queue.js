@@ -17,6 +17,7 @@ const Queue = function (config, runtime) {
   this.config = config.queue.rsmq || config.queue
   if (typeof this.config === 'string') {
     if (this.config.indexOf('redis://') === -1) this.config = 'redis://' + this.config
+    this.url = this.config
     this.config = { client: redis.createClient(this.config) }
   }
   this.rsmq = new Rsmq(this.config)

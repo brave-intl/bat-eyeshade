@@ -2,11 +2,15 @@ import {
   serial as test
 } from 'ava'
 import uuidV4 from 'uuid/v4'
+import supertest from 'supertest'
+import Server from '../../ledger/app'
 import {
   ok,
+  makeRuntime,
+  AUTH_KEY,
+  token,
   cleanDbs,
-  connectToDb,
-  ledgerAgent
+  connectToDb
 } from '../utils'
 import {
   ObjectID
@@ -16,7 +20,28 @@ const statsURL = '/v2/wallet/stats'
 const frozenDay = today()
 const DAY = 1000 * 60 * 60 * 24
 
+let ledgerServer = null
+let ledgerAgent = null
+
+const runtime = makeRuntime('ledger')
+
+test.before(async () => {
+  await cleanDbs()
+  ledgerServer = await Server({}, runtime)
+  await ledgerServer.started
+  ledgerAgent = await supertest.agent(ledgerServer.listener).set(AUTH_KEY, token)
+})
+
 test.afterEach.always(cleanDbs)
+
+test.after.always(async () => {
+  if (!ledgerAgent) {
+    return
+  }
+  await ledgerServer.stop({
+    timeout: 1
+  })
+})
 
 test('a stats endpoint exists', async (t) => {
   const url = `${statsURL}/${frozenDay.toISOString()}`

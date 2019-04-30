@@ -129,6 +129,7 @@ exports.workers = {
       const BATtoProbi = runtime.currency.alt2scale(payload.altcurrency)
       const { surveyorId } = payload
       const { postgres } = runtime
+      console.log(postgres.config.url)
 
       const probi = payload.probi && new BigNumber(payload.probi.toString())
       const price = probi.dividedBy(BATtoProbi).dividedBy(payload.votes)

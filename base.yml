@@ -6,15 +6,17 @@ services:
     build: .
     restart: always
     environment:
+      - "BAT_BALANCE_REDIS_URL=redis://balance-redis:6379"
       - "BAT_BALANCE_SERVER=http://balance-web:3003"
+      - "BAT_EYESHADE_REDIS_URL=redis://eyeshade-redis:6379"
       - "BAT_EYESHADE_SERVER=http://eyeshade-web:3002"
       - "BAT_GRANT_REDIS_URL=redis://grant-redis:6379"
       - "BAT_GRANT_SERVER=http://grant-web:3333"
+      - "BAT_LEDGER_REDIS_URL=redis://ledger-redis:6379"
       - "BAT_LEDGER_SERVER=http://ledger-web:3001"
-      - "BAT_MONGODB_URI=mongodb://mongo"
-      - "BAT_POSTGRES_URL=postgres://eyeshade:password@eyeshade-postgres/eyeshade"
+      - "BAT_MONGODB_URI=mongodb://mongo/"
+      - "BAT_POSTGRES_URL=postgres://eyeshade:password@postgres:5432/"
       - "BAT_RATIOS_URL=https://ratios-staging.mercury.basicattentiontoken.org"
-      - "BAT_REDIS_URL=redis://redis:6379"
       - "DEBUG=${DEBUG-*,-babel*,-eslint:*,-mongo:*,mongo:queries,-ava}"
       - "ENABLE_ADS_PAYOUT=1"
       - "FREEZE_SURVEYORS_AGE_DAYS=${FREEZE_SURVEYORS_AGE_DAYS-7}"
@@ -23,7 +25,6 @@ services:
       - "MONGODB_URI=${MONGODB_URI-mongodb://mongo/ledger}"
       - "NODE_ENV=${NODE_ENV-development}"
       - "REDEEMER_URL=${REDEEMER_URL-http://grant-web:3333}"
-      - "REDIS_URL=${REDIS_URL-redis://redis:6379}"
       - ALLOWED_ADS_TOKENS
       - ALLOWED_PUBLISHERS_TOKENS
       - BALANCE_CACHE_TTL_S
