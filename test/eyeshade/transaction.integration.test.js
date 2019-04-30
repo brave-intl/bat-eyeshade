@@ -403,13 +403,13 @@ test('common insertion fn', async (t) => {
     amount
   }
   const client = await runtime.postgres.connect()
-  const txs = await insertTransaction(client, inputs)
+  const txs = await insertTransaction(runtime, client, inputs)
   const zeroAmount = Object.assign({}, inputs, { amount: '0' })
-  await insertTransaction(client, zeroAmount)
+  await insertTransaction(runtime, client, zeroAmount)
   const negativeAmount = Object.assign({}, inputs, { amount: '-1' })
-  await insertTransaction(client, negativeAmount)
+  await insertTransaction(runtime, client, negativeAmount)
   const noAmount = Object.assign({}, inputs, { amount: null })
-  await t.throwsAsync(() => insertTransaction(client, noAmount))
+  await t.throwsAsync(() => insertTransaction(runtime, client, noAmount))
   const expectedResults = [{
     id,
     amount,

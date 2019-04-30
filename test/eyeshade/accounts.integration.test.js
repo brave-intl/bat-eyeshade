@@ -254,7 +254,7 @@ test('a uuid can be sent as an account id', async (t) => {
     toAccountType: 'uphold',
     amount: 1
   }
-  await insertTransaction(runtime.postgres, transaction)
+  await insertTransaction(runtime, runtime.postgres, transaction)
   response = await eyeshadeAgent.get(url).send().expect(ok)
   const { body } = response
   t.is(body.length, 1, 'one tx is matched')
@@ -280,7 +280,7 @@ test('an empty channel can exist', async (t) => {
     toAccountType: 'uphold',
     amount: 1
   }
-  await insertTransaction(runtime.postgres, transaction)
+  await insertTransaction(runtime, runtime.postgres, transaction)
   response = await eyeshadeAgent.get(url).send().expect(ok)
   const { body } = response
   const tx = body[0]
