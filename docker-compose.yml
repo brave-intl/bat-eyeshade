@@ -71,6 +71,7 @@ services:
       service: ledger
     environment:
       - "SERVICE=ledger"
+      - "MONGODB_URI=mongodb://mongo/ledger"
     depends_on:
       - mongo
       - redis
@@ -86,6 +87,7 @@ services:
       service: ledger
     environment:
       - "SERVICE=ledger"
+      - "MONGODB_URI=mongodb://mongo/ledger"
       - PUBLISHERS_TAKEOVER
     depends_on:
       - mongo
@@ -119,7 +121,7 @@ services:
     ports:
       - "3333:3333"
     environment:
-      - "REDIS_URL=${REDIS_URL-redis://grant-redis:6379}"
+      - "REDIS_URL=redis://grant-redis:6379"
       - BAT_SETTLEMENT_ADDRESS
       - GRANT_SIGNATOR_PUBLIC_KEY
       - GRANT_WALLET_CARD_ID

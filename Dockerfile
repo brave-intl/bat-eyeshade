@@ -11,13 +11,10 @@ RUN ln -s /cmake-3.6.2-Linux-x86_64/bin/ctest /usr/local/bin/ctest
 
 RUN apt-get update && apt-get install -y postgresql-client
 
-RUN mkdir -p /usr/src/app && mkdir /usr/src/app/bat-utils
+RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 
 RUN npm install -g npm@6.1
 
-COPY package.json package-lock.json /usr/src/app/
-COPY bat-utils/package.json /usr/src/app/bat-utils/
-RUN npm install
-COPY . /usr/src/app
+COPY . /usr/src/app/
 RUN npm run build

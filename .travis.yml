@@ -23,6 +23,7 @@ env:
     - "GRANT_WALLET_CARD_ID=f042845f-fa62-4022-8117-a476ec583a7b"
     - "NODE_ENV=development"
     - "NODE_PATH=."
+    - "SERVICE=ledger"
     - "CAPTCHA_URL=https://bat-captcha-staging.herokuapp.com"
     - "ALLOWED_ADS_TOKENS=foobarfoobar"
     - "ALLOWED_PUBLISHERS_TOKENS=foobarfoobar"
@@ -51,6 +52,7 @@ cache:
 before_install:
   - npm i --global npm@5.10.0
   - npm --version
+  - npm run copy-package-json
 install:
 - npm ci
 sudo: required

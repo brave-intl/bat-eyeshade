@@ -66,3 +66,11 @@ _.env
 dist
 
 *.DS_Store
+bat-utils/**/*.js
+bat-utils/**/*.js.map
+eyeshade/**/*.js
+eyeshade/**/*.js.map
+ledger/**/*.js
+ledger/**/*.js.map
+balance/**/*.js
+balance/**/*.js.map
