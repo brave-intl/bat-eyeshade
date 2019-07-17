@@ -44,7 +44,7 @@ async function main () {
   }
 
   await database.db.close()
-  await queue.rsmq.quit()
+  await queue.quit()
 }
 
 main().then(result => {}).catch(e => {

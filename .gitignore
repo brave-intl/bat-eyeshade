@@ -66,3 +66,4 @@ _.env
 dist
 
 *.DS_Store
+queue/index.json

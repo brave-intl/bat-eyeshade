@@ -40,4 +40,6 @@ const options = {
 config.cache = false
 config.postgres.schemaVersion = require('./migrations/current')
 
-extras.worker(options, new Runtime(config))
+const runtime = new Runtime(config)
+extras.worker(options, runtime)
+runtime.queue.register(parentModules)

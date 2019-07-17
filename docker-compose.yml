@@ -138,7 +138,6 @@ services:
     networks:
       - ledger
 
-
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
@@ -179,3 +178,16 @@ services:
       - "GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD-admin}"
       - "GF_USERS_ALLOW_SIGN_UP=false"
       - "GF_INSTALL_PLUGINS=grafana-worldmap-panel"
+
+  arena:
+    container_name: worker-arena
+    image: mmclau14/arena:latest
+    networks:
+      - ledger
+    ports:
+      - "4567:4567"
+    depends_on:
+      - redis
+      - eyeshade-worker
+    volumes:
+      - ./queue/index.json:/opt/arena/src/server/config/index.json

@@ -1,8 +1,6 @@
 import {
   serial as test
 } from 'ava'
-// import Postgres from 'bat-utils/lib/runtime-postgres'
-// import Queue from 'bat-utils/lib/runtime-queue'
 import { Runtime } from 'bat-utils'
 import SDebug from 'sdebug'
 import {
@@ -14,6 +12,7 @@ import {
 import {
   createSurveyor,
   getSurveyor,
+  cleanDbs,
   cleanPgDb
 } from '../utils'
 import {
@@ -40,12 +39,11 @@ const runtime = new Runtime({
   queue: BAT_REDIS_URL
 })
 test.afterEach.always(cleanPgDb(runtime.postgres))
+test.afterEach.always(cleanDbs)
 
 test('verify frozen occurs when daily is run', async t => {
   t.plan(12)
   let body
-
-  // FIXME sometimes hangs
   await createSurveyor()
   // just made value
   ;({ body } = await getSurveyor())

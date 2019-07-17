@@ -39,7 +39,9 @@ import {
 dotenv.config()
 
 const postgres = new Postgres({ postgres: { url: process.env.BAT_POSTGRES_URL } })
-const queue = new Queue({ queue: { rsmq: process.env.BAT_REDIS_URL } })
+const queue = new Queue({
+  queue: process.env.BAT_REDIS_URL
+})
 const runtime = { postgres, queue }
 
 const upholdBaseUrls = {

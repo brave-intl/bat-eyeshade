@@ -6,7 +6,8 @@
   "scripts": {
     "ava": "ava",
     "balance-server": "NODE_PATH=dist node --optimize_for_size --max_old_space_size=460 --gc_interval=100 dist/balance/server.js",
-    "build": "npm run build-utils && npm run build-ledger && npm run build-eyeshade && npm run build-balance && cp config.js dist/config.js",
+    "build": "npm run build-config && npm run build-utils && npm run build-ledger && npm run build-eyeshade && npm run build-balance && cp config.js dist/config.js",
+    "build-config": "node ./queue/index.js",
     "build-balance": "babel balance --ignore **/*.test.js -d dist/balance",
     "build-eyeshade": "babel eyeshade --ignore **/*.test.js -d dist/eyeshade && cp -R eyeshade/migrations/* dist/eyeshade/migrations/",
     "build-ledger": "babel ledger --ignore **/*.test.js -d dist/ledger",
@@ -35,7 +36,7 @@
     "test-integration": "ava -v -s test/*/*.integration.test.js && ava -v test/e2e.integration.test.js",
     "test-unit": "ava -v bat-utils/**/*.test.js ledger/**/*.test.js",
     "docker-reset": "docker-compose down && docker rmi $(docker images -a -q) --force",
-    "docker-build": "docker-compose build",
+    "docker-build": "npm run build-config && docker-compose build",
     "docker-up": "docker-compose up $npm_package_config_dockerservices",
     "docker-up-dev": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml up $npm_package_config_dockerservices $npm_package_config_dockermonitors",
     "docker-up-detached": "docker-compose up -d $npm_package_config_dockerservices",
@@ -46,7 +47,7 @@
     "postinstall": "test -e .git && { for file in `ls .git-hooks`; do ln -sf ../../.git-hooks/${file} .git/hooks/${file}; done } || true"
   },
   "config": {
-    "dockermonitors": "prometheus grafana",
+    "dockermonitors": "prometheus grafana arena",
     "dockerservices": "balance-web ledger-web ledger-worker eyeshade-web eyeshade-worker grant-web"
   },
   "repository": {
@@ -69,6 +70,7 @@
     "accept-language-parser": "1.4.1",
     "bat-publisher": "^2.0.24",
     "bat-utils": "file:./bat-utils",
+    "bee-queue": "^1.2.2",
     "bell": "8.7.0",
     "bignumber.js": "^4.1.0",
     "bitcoinjs-lib": "^3.2.0",
@@ -106,8 +108,6 @@
     "prom-client": "10.2.2",
     "proxy-agent": "^2.3.1",
     "redis": "^2.8.0",
-    "rsmq": "^0.8.2",
-    "rsmq-worker": "^0.5.2",
     "sdebug": "^0.9.5",
     "tldjs": "2.2.0",
     "tweetnacl": "^1.0.0",

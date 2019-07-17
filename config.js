@@ -117,8 +117,7 @@ module.exports =
 , database              :
   { mongo               : process.env.MONGODB_URI               || 'localhost/test' }
 , login                 : { github: false }
-, queue                 :
-  { rsmq                : process.env.REDIS_URL                 || 'redis://localhost:6379' }
+, queue                 : process.env.REDIS_URL                 || 'redis://localhost:6379'
 , sentry                :
   { dsn: process.env.SENTRY_DSN          || false
   , slug: process.env.HEROKU_SLUG_COMMIT || 'test'

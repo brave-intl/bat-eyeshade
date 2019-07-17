@@ -29,4 +29,6 @@ const options = {
 
 config.cache = false
 
-extras.worker(options, new Runtime(config))
+const runtime = new Runtime(config)
+extras.worker(options, runtime)
+runtime.queue.register(parentModules)

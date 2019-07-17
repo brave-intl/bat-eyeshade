@@ -1,6 +1,7 @@
 const { insertFromVoting, updateBalances } = require('../lib/transaction.js')
 const { mixer } = require('../workers/reports.js')
 
+exports.name = 'surveyors'
 exports.initialize = async (debug, runtime) => {
   await runtime.queue.create('surveyor-frozen-report')
 }

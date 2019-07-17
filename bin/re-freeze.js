@@ -22,7 +22,7 @@ async function main () {
     }
   }
 
-  await queue.rsmq.quit()
+  await queue.quit()
 }
 
 main().then(result => {}).catch(e => {
