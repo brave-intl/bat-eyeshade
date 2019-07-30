@@ -18,6 +18,7 @@ env:
     - "BAT_REDIS_URL=redis://localhost:3011"
     - "BAT_SETTLEMENT_ADDRESS=6654ecb0-6079-4f6c-ba58-791cc890a561"
     - "DEBUG=*,-babel,-eslint:*,-mongo:*,mongo:queries"
+    - "ENABLE_ADS_PAYOUT=1"
     - "FASTLY_TOKEN_LIST=foobarfoobar"
     - "FREEZE_SURVEYORS_AGE_DAYS=7"
     - "GRANT_SIGNATOR_PUBLIC_KEY=bbe028009e744422bfc39b0e226633324d8c5fe0744c87c1018b88a488bc5899"

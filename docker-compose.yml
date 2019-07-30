@@ -74,6 +74,7 @@ services:
     environment:
       - "SERVICE=ledger"
       - "DYNO=worker.1"
+      - "MONGODB_URI=mongodb://mongo/ledger"
     depends_on:
       - mongo
       - redis
@@ -89,6 +90,7 @@ services:
       service: ledger
     environment:
       - "SERVICE=ledger"
+      - "MONGODB_URI=mongodb://mongo/ledger"
       - PUBLISHERS_TAKEOVER
       - "DYNO=web.1"
     depends_on:
@@ -124,7 +126,7 @@ services:
     ports:
       - "3333:3333"
     environment:
-      - "REDIS_URL=${REDIS_URL-redis://grant-redis:6379}"
+      - "REDIS_URL=redis://grant-redis:6379"
       - BAT_SETTLEMENT_ADDRESS
       - GRANT_SIGNATOR_PUBLIC_KEY
       - GRANT_WALLET_CARD_ID
@@ -175,7 +177,7 @@ services:
     networks:
       - ledger
     environment:
-      - "GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER-admin}"
-      - "GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD-admin}"
+      - "GF_SECURITY_ADMIN_USER=admin"
+      - "GF_SECURITY_ADMIN_PASSWORD=admin"
       - "GF_USERS_ALLOW_SIGN_UP=false"
       - "GF_INSTALL_PLUGINS=grafana-worldmap-panel"

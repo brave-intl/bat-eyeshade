@@ -15,16 +15,13 @@ services:
       - "BAT_POSTGRES_URL=postgres://eyeshade:password@eyeshade-postgres/eyeshade"
       - "BAT_RATIOS_URL=https://ratios-staging.mercury.basicattentiontoken.org"
       - "BAT_REDIS_URL=redis://redis:6379"
-      - "DEBUG=${DEBUG-*,-babel*,-eslint:*,-mongo:*,mongo:queries,-ava}"
+      - "DEBUG=${DEBUG-*,-babel*,-eslint*,-mongo*,mongo:queries,-ava}"
       - "ENABLE_ADS_PAYOUT=1"
       - "FASTLY_TOKEN_LIST=foobarfoobar"
       - "FREEZE_SURVEYORS_AGE_DAYS=${FREEZE_SURVEYORS_AGE_DAYS-7}"
-      - "GRANT_REDIS_HOST=${GRANT_REDIS_HOST-grant-redis}"
-      - "LEDGER_URL=${LEDGER_URL-http://ledger-web:3001}"
-      - "MONGODB_URI=${MONGODB_URI-mongodb://mongo/ledger}"
+      - "GRANT_REDIS_HOST=grant-redis"
+      - "LEDGER_URL=http://ledger-web:3001"
       - "NODE_ENV=${NODE_ENV-development}"
-      - "REDEEMER_URL=${REDEEMER_URL-http://grant-web:3333}"
-      - "REDIS_URL=${REDIS_URL-redis://redis:6379}"
       - "ADS_AVAILABLE_LIST=US"
       - "ADS_URL=${ADS_URL-https://ads-serve.bravesoftware.com}"
       - ALLOWED_ADS_TOKENS
@@ -36,8 +33,6 @@ services:
       - BAT_FEE_ACCOUNT
       - BAT_RATIOS_TOKEN
       - BAT_SETTLEMENT_ADDRESS
-      - BITCOIN_AVERAGE_PUBLIC_KEY
-      - BITCOIN_AVERAGE_SECRET_KEY
       - CAPTCHA_TOKEN
       - CAPTCHA_URL
       - COINBASE_WIDGET_CODE
@@ -57,6 +52,7 @@ services:
       - LEDGER_GITHUB_CLIENT_SECRET
       - LEDGER_SLACK_CHANNEL
       - LEDGER_SLACK_ICON_URL
+      - MONGODB_URI
       - PORT
       - PUBLISHERS_TOKEN
       - PUBLISHERS_URL
