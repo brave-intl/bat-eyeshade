@@ -76,9 +76,13 @@ Prometheus.prototype.allMetrics = async function () {
   return client.AggregatorRegistry.aggregate(metrics)
 }
 
+Prometheus.prototype.exponentialBuckets = function () {
+  return this.client.exponentialBuckets(2, 2, 15)
+}
+
 Prometheus.prototype.registerMetrics = function () {
   const { client, register } = this
-  const log2Buckets = client.exponentialBuckets(2, 2, 15)
+  const log2Buckets = this.exponentialBuckets()
 
   new client.Summary({ // eslint-disable-line
     registers: [register],

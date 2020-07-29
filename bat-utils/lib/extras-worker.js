@@ -1,6 +1,6 @@
 const dns = require('dns')
 const os = require('os')
-
+const _ = require('lodash')
 const SDebug = require('sdebug')
 const underscore = require('underscore')
 
@@ -64,7 +64,11 @@ const Worker = async (options, runtime) => {
       listeners[name].push(queue)
     }
 
-    if (typeof module.initialize === 'function') workers = (await module.initialize(debug, runtime)) || workers
+    if (typeof module.initialize === 'function') {
+      workers = (await module.initialize(debug, runtime)) || workers
+    }
+    workers = underscore.mapObject(workers, instrumentWorker(runtime))
+
     listeners[name] = []
 
     const keys = underscore.keys(workers)
@@ -101,3 +105,36 @@ const Worker = async (options, runtime) => {
 }
 
 module.exports = Worker
+
+function instrumentWorker (runtime) {
+  return (handler, key) => {
+    const { prometheus } = runtime
+    const { client, register } = prometheus
+    const name = `${_.camelCase(key)}_worker_buckets_milliseconds`
+    const help = `${key} worker duration buckets in milliseconds`
+    const labelNames = ['erred']
+    const buckets = prometheus.exponentialBuckets()
+    const workerBucketsMilliseconds = new client.Histogram({
+      name,
+      help,
+      labelNames,
+      buckets
+    })
+    register.registerMetric(workerBucketsMilliseconds)
+
+    return async (debug, runtime, payload) => {
+      let erred = false
+      const end = prometheus.timedRequest(name)
+      try {
+        await handler(debug, runtime, payload)
+      } catch (e) {
+        erred = true
+        throw e
+      } finally {
+        end({
+          erred
+        })
+      }
+    }
+  }
+}
