@@ -1,4 +1,5 @@
 #!/bin/sh
+psql $DATABASE_URL -U eyeshade --single-transaction -v ON_ERROR_STOP=1 -f ./migrations/0020_remove_potential_payments_ads/down.sql
 psql $DATABASE_URL -U eyeshade --single-transaction -v ON_ERROR_STOP=1 -f ./migrations/0019_add_inserted_at/down.sql
 psql $DATABASE_URL -U eyeshade --single-transaction -v ON_ERROR_STOP=1 -f ./migrations/0018_add_snapshot_index/down.sql
 psql $DATABASE_URL -U eyeshade --single-transaction -v ON_ERROR_STOP=1 -f ./migrations/0017_include_indexes/down.sql
