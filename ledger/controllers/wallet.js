@@ -744,12 +744,12 @@ function claimWalletHandler (runtime) {
     } = postedTx.destination
     const userId = node.user.id
 
+    const providerLinkingId = uuidV5(userId || '', 'c39b298b-b625-42e9-a463-69c7726e5ddc')
     // check that where the transfer is going to is a card, that belongs to a member
+    debug('linking-card', { providerLinkingId, paymentId, anonymousAddress })
     if (type !== 'card' || !isMember || !userId) {
       throw boom.forbidden()
     }
-
-    const providerLinkingId = uuidV5(userId, 'c39b298b-b625-42e9-a463-69c7726e5ddc')
     // if wallet has already been claimed, don't tie wallet to member id
     if (wallet.providerLinkingId) {
       // Check if the member matches the associated member
