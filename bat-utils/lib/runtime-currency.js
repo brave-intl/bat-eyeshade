@@ -104,7 +104,7 @@ Currency.prototype = {
       if (lastDate > lastAcceptableCache) {
         return payload
       }
-      if (new Date(lastFailure) > (new Date()) - failureDebounceTime) {
+      if (new Date(lastFailure) > ((new Date()) - failureDebounceTime)) {
         return payload
       }
     }
@@ -237,4 +237,5 @@ function Currency (config, runtime) {
   context.runtime = runtime
   context.debug = debug
   context.cache = Currency.Cache()
+  return context
 }

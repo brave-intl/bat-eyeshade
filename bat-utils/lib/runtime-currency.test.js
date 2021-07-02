@@ -2,7 +2,7 @@
 
 const Currency = require('./runtime-currency')
 const { BigNumber } = require('./extras-utils')
-const test = require('ava')
+const { serial: test } = require('ava')
 const _ = require('underscore')
 const dotenv = require('dotenv')
 const {
@@ -123,31 +123,52 @@ test('a faulty request does not result in an error', async (t) => {
 })
 
 test('a faulty request delays subsequent requests', async (t) => {
-  const currency = make(Currency.Constructor, {
-    lastFailure: 5000
+  t.plan(8)
+  const nc = make(Currency.Constructor, {
+    failureDebounceTime: 3000
   })
-  const first = await currency.rates('BAT')
-  currency.parser = () => { throw new Error('missed') }
-  currency.request = _.wrap(currency.request, (request, endpoint) => {
-    return request.call(currency, endpoint)
+  nc.cache = nc.Cache()
+  const first = await nc.rates('BAT')
+  nc.parser = () => { throw new Error('missed') }
+  let runCount = 0
+  let expectedRunCounter = 0
+  nc.request = _.wrap(nc.request, async (request, endpoint) => {
+    runCount += 1
+    console.trace('before', runCount)
+    const res = await request.call(nc, endpoint)
+    console.trace('after', res.toString())
+    t.is(runCount, expectedRunCounter, `run counter ${runCount} was expected to be ${expectedRunCounter}`)
+    return res
   })
-  t.deepEqual(first, await currency.rates('BAT'))
-  await timeout(6000)
-  t.deepEqual(first, await currency.rates('BAT'))
-  currency.cache = currency.Cache()
+  // should hit request
+  expectedRunCounter = 1
+  console.log('expecting', expectedRunCounter)
+  t.deepEqual(first, await nc.rates('BAT'))
+  t.deepEqual(first, await nc.rates('BAT'))
+  await timeout(4000)
+  // should hit again
+  expectedRunCounter = 2
+  console.log('expecting', expectedRunCounter)
+  t.deepEqual(first, await nc.rates('BAT'))
+  t.deepEqual(first, await nc.rates('BAT'))
+  nc.cache = nc.Cache()
   try {
-    await currency.rates('BAT')
+    // should hit again
+    expectedRunCounter = 3
+    console.log('expecting', expectedRunCounter)
+    await nc.rates('BAT')
   } catch (e) {
     t.true(_.isObject(e))
   }
 })
 
 function make (Constructor = Currency, options = {}) {
+  const currency = Object.assign({
+    url: process.env.BAT_RATIOS_URL,
+    access_token: process.env.BAT_RATIOS_TOKEN
+  }, options)
   return new Constructor({
-    currency: Object.assign({
-      url: process.env.BAT_RATIOS_URL,
-      access_token: process.env.BAT_RATIOS_TOKEN
-    }, options)
+    currency
   }, {
     captureException: () => {}
   })
