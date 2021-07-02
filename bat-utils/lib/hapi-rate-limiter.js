@@ -1,29 +1,12 @@
 const boom = require('@hapi/boom')
-const Netmask = require('netmask').Netmask
 const {
   RateLimiterRedis
 } = require('rate-limiter-flexible')
-const _ = require('underscore')
-const underscore = _
-
 const whitelist = require('./hapi-auth-whitelist')
 
 const pluginName = 'rateLimitRedisPlugin'
 
-const graylist = {
-  addresses: process.env.IP_GRAYLIST && process.env.IP_GRAYLIST.split(',')
-}
-
-if (graylist.addresses) {
-  graylist.authorizedAddrs = []
-  graylist.authorizedBlocks = []
-
-  graylist.addresses.forEach((entry) => {
-    if ((entry.indexOf('/') === -1) && (entry.split('.').length === 4)) return graylist.authorizedAddrs.push(entry)
-
-    graylist.authorizedBlocks.push(new Netmask(entry))
-  })
-}
+const greylist = whitelist.parseList(process.env.IP_GRAYLIST)
 
 module.exports = (runtime) => {
   const redisClient = (runtime.cache && runtime.cache.cache)
@@ -119,9 +102,7 @@ module.exports = (runtime) => {
         return internals.noRateLimiter
       }
 
-      if ((graylist.authorizedAddrs) &&
-          ((graylist.authorizedAddrs.indexOf(ipaddr) !== -1) ||
-           (underscore.find(graylist.authorizedBlocks, (block) => { return block.contains(ipaddr) })))) {
+      if (whitelist.ipInList(greylist, ipaddr)) {
         return internals.noRateLimiter
       }
 

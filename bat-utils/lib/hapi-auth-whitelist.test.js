@@ -3,6 +3,7 @@ const _ = require('underscore')
 const {
   validateHops,
   forwardedIPShift,
+  ipInList,
   ipaddr
 } = require('./hapi-auth-whitelist.js')
 const {
@@ -68,6 +69,23 @@ test('shift amount can be retrieved', async (t) => {
     setEnvs(['-2'])
     t.is(forwardedIPShift(), 1, 'negative numbers are clamped to 1')
   })
+})
+
+test('is whitelisted', async (t) => {
+  const hardcode = '127.0.0.1'
+  const mask = '127.0.0.0/24'
+  const scenarios = [
+    { value: hardcode, [hardcode]: true, [mask]: true },
+    { value: '127.0.0', [hardcode]: false, [mask]: true },
+    { value: '127.0.0.2', [hardcode]: false, [mask]: true },
+    { value: '127.0.1.0', [hardcode]: false, [mask]: false },
+    { value: '192.168.1.0', [hardcode]: false, [mask]: false }
+  ]
+  scenarios.forEach((scenario) => {
+    t.is(scenario[hardcode], ipInList(hardcode, scenario.value))
+    t.is(scenario[mask], ipInList(mask, scenario.value))
+  })
+  t.throws(() => ipInList('127.0.0.1:3000', hardcode), Error)
 })
 
 function req (remoteAddress, XForwardedFor, token = validFastlyToken) {
